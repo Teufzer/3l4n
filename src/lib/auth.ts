@@ -1,17 +1,13 @@
 /**
- * Auth helpers — à connecter avec NextAuth v5 quand la config sera prête.
- * En attendant, on expose un helper `getCurrentUserId` utilisable dans les API routes.
+ * Auth helpers — wrapper autour de NextAuth v5.
  */
-import { cookies } from 'next/headers'
+import { auth } from '@/auth'
 
 /**
- * Récupère l'userId depuis la session/cookie.
- * À remplacer par `const session = await auth(); return session?.user?.id` quand NextAuth est configuré.
+ * Récupère l'userId de l'utilisateur connecté via la session NextAuth.
+ * Retourne null si non authentifié.
  */
 export async function getCurrentUserId(): Promise<string | null> {
-  // Placeholder : lit un cookie de session basique
-  // TODO: remplacer par la vraie logique NextAuth v5
-  const cookieStore = await cookies()
-  const userId = cookieStore.get('userId')?.value ?? null
-  return userId
+  const session = await auth()
+  return session?.user?.id ?? null
 }

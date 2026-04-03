@@ -1,21 +1,22 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useSession } from 'next-auth/react'
 import PostCard, { Post } from './PostCard'
 import PostForm from './PostForm'
 
 const PAGE_SIZE = 10
 
 export default function Feed() {
+  const { data: session } = useSession()
+  const currentUserId = session?.user?.id
+
   const [posts, setPosts] = useState<Post[]>([])
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
   const [initialLoad, setInitialLoad] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  // For demo: no auth → no currentUserId. Replace with real session later.
-  const currentUserId = undefined
 
   const fetchPosts = useCallback(async (pageNum: number, replace = false) => {
     setLoading(true)
@@ -59,8 +60,14 @@ export default function Feed() {
         <p className="text-white/40 text-sm">Partagez, encouragez, progressez ensemble</p>
       </div>
 
-      {/* Post form */}
-      <PostForm onPostCreated={handlePostCreated} />
+      {/* Post form — only if logged in */}
+      {currentUserId ? (
+        <PostForm onPostCreated={handlePostCreated} userName={session?.user?.name ?? 'Moi'} />
+      ) : (
+        <div className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-4 text-center text-white/40 text-sm">
+          <a href="/login" className="text-emerald-400 hover:underline">Connecte-toi</a> pour partager ta progression ✨
+        </div>
+      )}
 
       {/* Feed */}
       {initialLoad ? (

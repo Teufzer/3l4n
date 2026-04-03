@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/auth'
 import { ReactionType } from '@prisma/client'
 
 const VALID_TYPES: ReactionType[] = ['COURAGE', 'EN_FEU', 'SOLIDAIRE']
@@ -10,9 +11,14 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
     const { id: postId } = await params
     const body = await req.json()
-    const { type, userId } = body
+    const { type } = body
 
     if (!type || !VALID_TYPES.includes(type as ReactionType)) {
       return NextResponse.json(
@@ -21,15 +27,13 @@ export async function POST(
       )
     }
 
-    if (!userId || typeof userId !== 'string') {
-      return NextResponse.json({ error: 'userId est requis' }, { status: 400 })
-    }
-
     // Check post exists
     const post = await prisma.post.findUnique({ where: { id: postId } })
     if (!post) {
       return NextResponse.json({ error: 'Post introuvable' }, { status: 404 })
     }
+
+    const userId = session.user.id
 
     // Toggle: if reaction exists, remove it; otherwise create it
     const existing = await prisma.reaction.findUnique({

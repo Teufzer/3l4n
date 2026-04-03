@@ -4,9 +4,19 @@ import { useState } from 'react'
 
 interface PostFormProps {
   onPostCreated?: () => void
+  userName?: string
 }
 
-export default function PostForm({ onPostCreated }: PostFormProps) {
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+export default function PostForm({ onPostCreated, userName = 'Moi' }: PostFormProps) {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -52,9 +62,9 @@ export default function PostForm({ onPostCreated }: PostFormProps) {
       className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-4 space-y-3"
     >
       <div className="flex items-start gap-3">
-        {/* Avatar placeholder */}
-        <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold ring-2 ring-emerald-500/30 flex-shrink-0 mt-0.5">
-          Moi
+        {/* Avatar */}
+        <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold ring-2 ring-emerald-500/30 flex-shrink-0 mt-0.5">
+          {getInitials(userName)}
         </div>
 
         <textarea
