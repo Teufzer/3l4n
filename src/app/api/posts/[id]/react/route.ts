@@ -1,0 +1,60 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { ReactionType } from '@prisma/client'
+
+const VALID_TYPES: ReactionType[] = ['COURAGE', 'EN_FEU', 'SOLIDAIRE']
+
+// POST /api/posts/[id]/react
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: postId } = await params
+    const body = await req.json()
+    const { type, userId } = body
+
+    if (!type || !VALID_TYPES.includes(type as ReactionType)) {
+      return NextResponse.json(
+        { error: `Type invalide. Valeurs acceptées : ${VALID_TYPES.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
+    if (!userId || typeof userId !== 'string') {
+      return NextResponse.json({ error: 'userId est requis' }, { status: 400 })
+    }
+
+    // Check post exists
+    const post = await prisma.post.findUnique({ where: { id: postId } })
+    if (!post) {
+      return NextResponse.json({ error: 'Post introuvable' }, { status: 404 })
+    }
+
+    // Toggle: if reaction exists, remove it; otherwise create it
+    const existing = await prisma.reaction.findUnique({
+      where: {
+        postId_userId_type: { postId, userId, type: type as ReactionType },
+      },
+    })
+
+    if (existing) {
+      await prisma.reaction.delete({ where: { id: existing.id } })
+    } else {
+      await prisma.reaction.create({
+        data: { type: type as ReactionType, postId, userId },
+      })
+    }
+
+    // Return updated reactions for this post
+    const reactions = await prisma.reaction.findMany({
+      where: { postId },
+      select: { id: true, type: true, userId: true },
+    })
+
+    return NextResponse.json({ reactions, toggled: !existing })
+  } catch (error) {
+    console.error('[POST /api/posts/[id]/react]', error)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  }
+}
