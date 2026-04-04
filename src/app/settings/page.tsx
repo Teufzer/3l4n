@@ -71,6 +71,16 @@ export default function SettingsPage() {
         throw new Error(data.error || 'Erreur lors de la sauvegarde')
       }
 
+      // Re-fetch profile to reflect saved values
+      const fresh = await fetch('/api/user').then(r => r.json())
+      if (fresh.user) {
+        setProfile(fresh.user)
+        setUsername(fresh.user.username || '')
+        setName(fresh.user.name || '')
+        setBio(fresh.user.bio || '')
+        setStartWeight(fresh.user.startWeight?.toString() || '')
+        setTargetWeight(fresh.user.targetWeight?.toString() || '')
+      }
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
