@@ -57,17 +57,26 @@ export default async function Home() {
       </main>
 
       {/* Stats en bas */}
-      <footer className="px-6 pb-10 pt-16 flex justify-center gap-12 text-center">
-        {[
-          { value: '100%', label: 'Gratuit' },
-          { value: '0', label: 'Jugement' },
-          { value: '∞', label: 'Soutien' },
-        ].map((s) => (
-          <div key={s.label}>
-            <p className="text-2xl font-black text-emerald-400">{s.value}</p>
-            <p className="text-white/30 text-sm mt-0.5">{s.label}</p>
-          </div>
-        ))}
+      <footer className="px-6 pb-10 pt-16 flex flex-col items-center gap-8">
+        <div className="flex justify-center gap-12 text-center">
+          {[
+            { value: '100%', label: 'Gratuit' },
+            { value: '0', label: 'Jugement' },
+            { value: '∞', label: 'Soutien' },
+          ].map((s) => (
+            <div key={s.label}>
+              <p className="text-2xl font-black text-emerald-400">{s.value}</p>
+              <p className="text-white/30 text-sm mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/legal/cgu" className="text-white/25 hover:text-white/50 text-xs transition">CGU</Link>
+          <span className="text-white/15 text-xs">·</span>
+          <Link href="/legal/privacy" className="text-white/25 hover:text-white/50 text-xs transition">Confidentialité</Link>
+          <span className="text-white/15 text-xs">·</span>
+          <Link href="/legal/mentions" className="text-white/25 hover:text-white/50 text-xs transition">Mentions légales</Link>
+        </div>
       </footer>
 
     </div>

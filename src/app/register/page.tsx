@@ -23,6 +23,7 @@ export default function RegisterPage() {
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle')
   const [usernameError, setUsernameError] = useState('')
   const [suggestions, setSuggestions] = useState<string[]>([])
+  const [acceptedCGU, setAcceptedCGU] = useState(false)
 
   // General
   const [error, setError] = useState('')
@@ -86,6 +87,10 @@ export default function RegisterPage() {
     e.preventDefault()
     if (usernameStatus !== 'available') {
       setError('Choisis un @username disponible')
+      return
+    }
+    if (!acceptedCGU) {
+      setError('Tu dois accepter les CGU et la politique de confidentialité')
       return
     }
 
@@ -342,6 +347,40 @@ export default function RegisterPage() {
                 Ton @username est public et unique. Tu pourras le changer plus tard depuis tes paramètres.
               </p>
 
+              {/* CGU checkbox */}
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <div className="relative mt-0.5 shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={acceptedCGU}
+                    onChange={(e) => setAcceptedCGU(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
+                    acceptedCGU
+                      ? 'bg-emerald-500 border-emerald-500'
+                      : 'bg-transparent border-zinc-600 group-hover:border-zinc-400'
+                  }`}>
+                    {acceptedCGU && (
+                      <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <span className="text-xs text-zinc-400 leading-relaxed">
+                  J&apos;accepte les{' '}
+                  <a href="/legal/cgu" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline" onClick={(e) => e.stopPropagation()}>
+                    CGU
+                  </a>
+                  {' '}et la{' '}
+                  <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline" onClick={(e) => e.stopPropagation()}>
+                    politique de confidentialité
+                  </a>
+                  {' '}de 3l4n
+                </span>
+              </label>
+
               <div className="flex gap-3 mt-2">
                 <button
                   type="button"
@@ -352,7 +391,7 @@ export default function RegisterPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || usernameStatus !== 'available'}
+                  disabled={loading || usernameStatus !== 'available' || !acceptedCGU}
                   className="flex-1 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Création...' : 'Créer mon compte 🚀'}

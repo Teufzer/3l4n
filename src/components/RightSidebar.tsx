@@ -91,6 +91,14 @@ export default function RightSidebar() {
       <p className="text-white/20 text-xs px-1">
         3l4n · <Link href="/feed" className="hover:underline">Feed</Link>
       </p>
+
+      <div className="flex items-center gap-2 px-1 flex-wrap">
+        <Link href="/legal/cgu" className="text-white/20 hover:text-white/40 text-xs transition">CGU</Link>
+        <span className="text-white/10 text-xs">·</span>
+        <Link href="/legal/privacy" className="text-white/20 hover:text-white/40 text-xs transition">Confidentialité</Link>
+        <span className="text-white/10 text-xs">·</span>
+        <Link href="/legal/mentions" className="text-white/20 hover:text-white/40 text-xs transition">Mentions légales</Link>
+      </div>
     </div>
   )
 }
