@@ -49,6 +49,8 @@ model User {
   blocking             Block[]         @relation("Blocker")
   emailVerifications   EmailVerification[]
   passwordResets       PasswordReset[]
+  commentLikes         CommentLike[]
+  reposts              Repost[]
 }
 
 model Account {
@@ -111,6 +113,7 @@ model Post {
   comments        Comment[]
   reports         Report[]
   notifications   Notification[]
+  reposts         Repost[]
 }
 
 model Comment {
@@ -123,6 +126,7 @@ model Comment {
   post          Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
   reports       Report[]
   notifications Notification[]
+  likes         CommentLike[]
 }
 
 model Report {
@@ -170,6 +174,7 @@ enum NotifType {
   REACTION
   COMMENT
   FOLLOW
+  REPOST
 }
 
 model Follow {
@@ -217,4 +222,26 @@ enum ReactionType {
   COURAGE
   EN_FEU
   SOLIDAIRE
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+}
+
+model Repost {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
 }

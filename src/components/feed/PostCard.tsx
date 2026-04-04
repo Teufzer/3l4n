@@ -30,6 +30,8 @@ export interface Post {
     image?: string | null
   }
   reactions: Reaction[]
+  repostsCount?: number
+  repostedByMe?: boolean
 }
 
 interface PostCardProps {
@@ -73,6 +75,9 @@ export default function PostCard({ post, currentUserId, isAdmin, onDeleted, onUp
   const [reactions, setReactions] = useState<Reaction[]>(post.reactions)
   const [loading, setLoading] = useState<ReactionType | null>(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [repostsCount, setRepostsCount] = useState(post.repostsCount ?? 0)
+  const [repostedByMe, setRepostedByMe] = useState(post.repostedByMe ?? false)
+  const [repostLoading, setRepostLoading] = useState(false)
 
   // Edit/delete state
   const [menuOpen, setMenuOpen] = useState(false)
@@ -106,6 +111,33 @@ export default function PostCard({ post, currentUserId, isAdmin, onDeleted, onUp
 
   const hasReacted = (type: ReactionType) =>
     currentUserId ? reactions.some((r) => r.type === type && r.userId === currentUserId) : false
+
+  const handleRepost = async () => {
+    if (!currentUserId || repostLoading) return
+    // Optimistic update
+    const wasReposted = repostedByMe
+    setRepostedByMe(!wasReposted)
+    setRepostsCount((c) => (wasReposted ? c - 1 : c + 1))
+    setRepostLoading(true)
+    try {
+      const res = await fetch(`/api/posts/${post.id}/repost`, { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        setRepostedByMe(data.reposted)
+        setRepostsCount(data.count)
+      } else {
+        // Revert
+        setRepostedByMe(wasReposted)
+        setRepostsCount((c) => (wasReposted ? c + 1 : c - 1))
+      }
+    } catch {
+      // Revert
+      setRepostedByMe(wasReposted)
+      setRepostsCount((c) => (wasReposted ? c + 1 : c - 1))
+    } finally {
+      setRepostLoading(false)
+    }
+  }
 
   const handleShare = async () => {
     const url = `https://3l4n.com/post/${post.id}`
@@ -327,6 +359,29 @@ export default function PostCard({ post, currentUserId, isAdmin, onDeleted, onUp
             )
           })}
         </div>
+
+        {/* Repost button */}
+        {currentUserId && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRepost}
+              disabled={repostLoading}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all
+                ${
+                  repostedByMe
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                    : 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/70'
+                }
+                ${repostLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
+              `}
+              title={repostedByMe ? 'Annuler le repost' : 'Repost'}
+            >
+              <span>🔄</span>
+              <span>Repost</span>
+              {repostsCount > 0 && <span>{repostsCount}</span>}
+            </button>
+          </div>
+        )}
 
         {/* Comments */}
         <CommentSection postId={post.id} currentUserId={currentUserId} />

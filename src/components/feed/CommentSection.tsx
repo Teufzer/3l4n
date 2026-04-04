@@ -18,6 +18,8 @@ interface Comment {
   content: string
   createdAt: string
   author: CommentAuthor
+  likesCount: number
+  likedByMe: boolean
 }
 
 interface CommentSectionProps {
@@ -107,6 +109,7 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
   const [loaded, setLoaded] = useState(false)
   const [text, setText] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [likingComment, setLikingComment] = useState<string | null>(null)
 
   // Mention autocomplete state
   const [mentionQuery, setMentionQuery] = useState<string | null>(null)
@@ -185,7 +188,11 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
       const res = await fetch(`/api/posts/${postId}/comments`)
       if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
-      setComments(data.comments)
+      setComments(data.comments.map((c: Comment) => ({
+        ...c,
+        likesCount: c.likesCount ?? 0,
+        likedByMe: c.likedByMe ?? false,
+      })))
       setLoaded(true)
     } catch (err) {
       console.error(err)
@@ -215,7 +222,7 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
       })
       if (!res.ok) throw new Error('Failed to post')
       const data = await res.json()
-      setComments((prev) => [...prev, data.comment])
+      setComments((prev) => [...prev, { ...data.comment, likesCount: 0, likedByMe: false }])
       setText('')
     } catch (err) {
       console.error(err)
@@ -292,7 +299,82 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
                     {comment.author.verified && <VerifiedBadge className="w-3.5 h-3.5" />}
                   </span>
                   <span className="text-white/30 text-[10px]">{formatDate(comment.createdAt)}</span>
-                  <div className="ml-auto">
+                  <div className="ml-auto flex items-center gap-1">
+                    {/* Like button */}
+                    {currentUserId && (
+                      <button
+                        onClick={async () => {
+                          if (likingComment === comment.id) return
+                          // Optimistic update
+                          setComments((prev) =>
+                            prev.map((c) =>
+                              c.id === comment.id
+                                ? {
+                                    ...c,
+                                    likedByMe: !c.likedByMe,
+                                    likesCount: c.likedByMe ? c.likesCount - 1 : c.likesCount + 1,
+                                  }
+                                : c
+                            )
+                          )
+                          setLikingComment(comment.id)
+                          try {
+                            const res = await fetch(
+                              `/api/posts/${postId}/comments/${comment.id}/like`,
+                              { method: 'POST' }
+                            )
+                            if (res.ok) {
+                              const data = await res.json()
+                              setComments((prev) =>
+                                prev.map((c) =>
+                                  c.id === comment.id
+                                    ? { ...c, likedByMe: data.liked, likesCount: data.count }
+                                    : c
+                                )
+                              )
+                            } else {
+                              // Revert on error
+                              setComments((prev) =>
+                                prev.map((c) =>
+                                  c.id === comment.id
+                                    ? {
+                                        ...c,
+                                        likedByMe: !c.likedByMe,
+                                        likesCount: c.likedByMe ? c.likesCount - 1 : c.likesCount + 1,
+                                      }
+                                    : c
+                                )
+                              )
+                            }
+                          } catch {
+                            // Revert on error
+                            setComments((prev) =>
+                              prev.map((c) =>
+                                c.id === comment.id
+                                  ? {
+                                      ...c,
+                                      likedByMe: !c.likedByMe,
+                                      likesCount: c.likedByMe ? c.likesCount - 1 : c.likesCount + 1,
+                                    }
+                                  : c
+                              )
+                            )
+                          } finally {
+                            setLikingComment(null)
+                          }
+                        }}
+                        className={`flex items-center gap-0.5 text-[10px] transition-colors ${
+                          comment.likedByMe
+                            ? 'text-red-400'
+                            : 'text-white/30 hover:text-red-400'
+                        }`}
+                        title={comment.likedByMe ? 'Retirer le like' : 'Liker'}
+                        disabled={likingComment === comment.id}
+                      >
+                        <span>❤️</span>
+                        {comment.likesCount > 0 && <span>{comment.likesCount}</span>}
+                      </button>
+                    )}
                     <ReportButton
                       commentId={comment.id}
                       postIdForComment={postId}

@@ -13,7 +13,7 @@ interface NotifActor {
 
 interface Notification {
   id: string
-  type: 'MENTION' | 'REACTION' | 'COMMENT' | 'FOLLOW'
+  type: 'MENTION' | 'REACTION' | 'COMMENT' | 'FOLLOW' | 'REPOST'
   read: boolean
   createdAt: string
   actorId: string
@@ -59,6 +59,8 @@ function notifText(notif: Notification): { prefix: string; highlight?: string; s
       return { prefix: actor, highlight: ' a commenté', suffix: ' ton post' }
     case 'FOLLOW':
       return { prefix: actor, highlight: ' a commencé', suffix: ' à te suivre' }
+    case 'REPOST':
+      return { prefix: actor, highlight: ' a reposté', suffix: ' ton post' }
     default:
       return { prefix: actor, highlight: '', suffix: '' }
   }
@@ -84,6 +86,12 @@ function notifIcon(type: Notification['type']) {
       return (
         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 text-xs">
           💬
+        </span>
+      )
+    case 'REPOST':
+      return (
+        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs">
+          🔄
         </span>
       )
   }
