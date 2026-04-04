@@ -65,6 +65,10 @@ function getInitials(name: string) {
 }
 
 export default function PostCard({ post, currentUserId, onDeleted, onUpdated }: PostCardProps) {
+  const authorHref = (post.author as { username?: string }).username
+    ? `/${(post.author as { username?: string }).username}`
+    : `/profile/${post.author.id}`
+
   const [reactions, setReactions] = useState<Reaction[]>(post.reactions)
   const [loading, setLoading] = useState<ReactionType | null>(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -189,22 +193,24 @@ export default function PostCard({ post, currentUserId, onDeleted, onUpdated }: 
       >
         {/* Header */}
         <div className="flex items-center gap-3 relative">
-          {(post.author.avatar || post.author.image) ? (
-            <img
-              src={(post.author.avatar || post.author.image)!}
-              alt={post.author.name}
-              className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/30"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold ring-2 ring-emerald-500/30 flex-shrink-0">
-              {getInitials(post.author.name)}
-            </div>
-          )}
+          <Link href={authorHref} className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            {(post.author.avatar || post.author.image) ? (
+              <img
+                src={(post.author.avatar || post.author.image)!}
+                alt={post.author.name}
+                className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/30 hover:ring-emerald-400 transition"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold ring-2 ring-emerald-500/30 hover:ring-emerald-400 transition flex-shrink-0">
+                {getInitials(post.author.name)}
+              </div>
+            )}
+          </Link>
           <div className="min-w-0 flex-1">
-            <span className="flex items-center gap-1">
+            <Link href={authorHref} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 hover:underline w-fit">
               <p className="text-white font-semibold text-sm truncate">{post.author.name}</p>
               {(post.author as { verified?: boolean }).verified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
-            </span>
+            </Link>
             <Link
               href={`/post/${post.id}`}
               className="text-white/40 text-xs hover:text-emerald-400 transition-colors"
