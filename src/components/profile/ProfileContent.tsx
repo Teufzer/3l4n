@@ -111,8 +111,8 @@ export default function ProfileContent({
   const [postsLoading, setPostsLoading] = useState(false)
   const [postsFetched, setPostsFetched] = useState(false)
 
-  // _count.following = gens qui TE suivent (vrais abonnés)
-  const [followersCount, setFollowersCount] = useState(user._count.following ?? 0)
+  // followersCount = gens que TU suis = abonnements (user._count.followers)
+  const [followersCount, setFollowersCount] = useState(user._count.followers ?? 0)
   const [blockMenuOpen, setBlockMenuOpen] = useState(false)
   const [blocking, setBlocking] = useState(false)
 
