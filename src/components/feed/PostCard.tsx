@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { parseMentions } from '@/lib/parseMentions'
 import CommentSection from './CommentSection'
 import ReportButton from './ReportButton'
 
@@ -255,7 +256,7 @@ export default function PostCard({ post, currentUserId, onDeleted, onUpdated }: 
         {/* Content */}
         <div className="space-y-1">
           <p className="text-white/80 text-sm leading-relaxed whitespace-pre-wrap">
-            {showOriginal ? currentOriginal : currentContent}
+            {parseMentions(showOriginal ? (currentOriginal ?? '') : currentContent)}
           </p>
 
           {/* Badge modifié + toggle original */}
