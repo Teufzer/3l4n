@@ -15,13 +15,14 @@ export default function FollowButton({
   initialFollowersCount = 0,
   onFollowChange,
 }: FollowButtonProps) {
+  // `ready` stays false until the API has confirmed the real state
+  const [ready, setReady] = useState(false)
   const [following, setFollowing] = useState(initialFollowing)
   const [followersCount, setFollowersCount] = useState(initialFollowersCount)
-  const [loading, setLoading] = useState(false)
+  const [acting, setActing] = useState(false)
   const [hovered, setHovered] = useState(false)
-  const [hydrated, setHydrated] = useState(false)
 
-  // Fetch real status on mount
+  // Fetch real follow status on mount — no optimistic pre-render
   useEffect(() => {
     let cancelled = false
     async function fetchStatus() {
@@ -32,11 +33,11 @@ export default function FollowButton({
         if (!cancelled) {
           setFollowing(data.following)
           setFollowersCount(data.followersCount)
-          setHydrated(true)
         }
       } catch {
-        // silent — use initial props
-        if (!cancelled) setHydrated(true)
+        // silent — keep initial props as fallback
+      } finally {
+        if (!cancelled) setReady(true)
       }
     }
     fetchStatus()
@@ -44,73 +45,68 @@ export default function FollowButton({
   }, [userId])
 
   const handleClick = async () => {
-    if (loading) return
-
-    // Optimistic update
-    const newFollowing = !following
-    const newCount = newFollowing ? followersCount + 1 : Math.max(0, followersCount - 1)
-    setFollowing(newFollowing)
-    setFollowersCount(newCount)
-    setLoading(true)
-
+    if (acting || !ready) return
+    setActing(true)
     try {
       const res = await fetch(`/api/users/${userId}/follow`, { method: 'POST' })
-      if (!res.ok) {
-        // Revert on error
-        setFollowing(following)
-        setFollowersCount(followersCount)
-        return
-      }
+      if (!res.ok) return
       const data = await res.json()
       setFollowing(data.following)
       setFollowersCount(data.followersCount)
       onFollowChange?.(data.following, data.followersCount)
     } catch {
-      // Revert on error
-      setFollowing(following)
-      setFollowersCount(followersCount)
+      // silent
     } finally {
-      setLoading(false)
+      setActing(false)
     }
   }
 
-  // Determine label
-  let label: string
-  if (loading) {
-    label = following ? 'Suivi' : 'Suivre'
-  } else if (following) {
-    label = hovered ? 'Ne plus suivre' : 'Suivi'
-  } else {
-    label = 'Suivre'
+  // ── Skeleton while waiting for API ──────────────────────────
+  if (!ready) {
+    return (
+      <button
+        disabled
+        className="w-28 h-8 rounded-full bg-zinc-800 animate-pulse cursor-not-allowed"
+        aria-label="Chargement…"
+      />
+    )
   }
 
-  const isFollowingStyle = following && !loading
-  const isDanger = following && hovered && !loading
+  // ── Following → hover shows "Ne plus suivre" ─────────────────
+  if (following) {
+    return (
+      <button
+        onClick={handleClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        disabled={acting}
+        aria-label={hovered ? 'Ne plus suivre' : 'Suivi'}
+        className={[
+          'w-28 h-8 rounded-full text-sm font-bold transition-none',
+          acting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
+          hovered
+            ? 'bg-red-500/10 text-red-400 border border-red-500'
+            : 'bg-emerald-500 text-black',
+        ].join(' ')}
+      >
+        {acting ? '…' : hovered ? 'Ne plus suivre' : 'Suivi ✓'}
+      </button>
+    )
+  }
 
+  // ── Not following ─────────────────────────────────────────────
   return (
     <button
       onClick={handleClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      disabled={loading || !hydrated}
-      aria-label={label}
+      disabled={acting}
+      aria-label="Suivre"
       className={[
-        'relative flex items-center justify-center gap-2 px-5 py-1.5 rounded-full text-sm font-bold transition-all duration-150',
-        'min-w-[96px]',
-        isFollowingStyle
-          ? isDanger
-            ? 'bg-transparent border border-red-500 text-red-400 hover:bg-red-500/10'
-            : 'bg-white text-black hover:bg-zinc-200'
-          : 'bg-transparent border border-white text-white hover:bg-white/10',
-        (loading || !hydrated) ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer',
+        'w-28 h-8 rounded-full text-sm font-bold border border-emerald-500 text-emerald-400',
+        'hover:bg-emerald-500/10 transition-none',
+        acting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
       ].join(' ')}
     >
-      {loading && (
-        <span className="absolute left-3 top-1/2 -translate-y-1/2">
-          <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />
-        </span>
-      )}
-      <span className={loading ? 'ml-4' : ''}>{label}</span>
+      {acting ? '…' : 'Suivre'}
     </button>
   )
 }

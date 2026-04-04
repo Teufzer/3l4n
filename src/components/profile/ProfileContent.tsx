@@ -303,14 +303,14 @@ export default function ProfileContent({
 
             {/* Follow counts */}
             <div className="flex items-center gap-4 pt-2 text-sm">
-              <span>
+              <Link href={`/profile/${user.id}/followers`} className="hover:underline">
                 <span className="text-white font-bold">{followersCount}</span>
                 <span className="text-zinc-500 ml-1">abonné{followersCount !== 1 ? 's' : ''}</span>
-              </span>
-              <span>
+              </Link>
+              <Link href={`/profile/${user.id}/following`} className="hover:underline">
                 <span className="text-white font-bold">{user._count.following ?? 0}</span>
                 <span className="text-zinc-500 ml-1">abonnements</span>
-              </span>
+              </Link>
             </div>
 
             {/* Inline stats */}
