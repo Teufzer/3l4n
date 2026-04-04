@@ -19,13 +19,13 @@ function getInitials(name: string | null | undefined) {
     .slice(0, 2)
 }
 
-function computeWeightStats(entries: { weight: number; date: Date }[]) {
-  if (entries.length < 2) return null
+function computeWeightStats(entries: { weight: number; date: Date }[], startWeight?: number | null) {
+  if (entries.length === 0) return null
 
   const sorted = [...entries].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   )
-  const first = sorted[0].weight
+  const first = startWeight ?? sorted[0].weight
   const last = sorted[sorted.length - 1].weight
   const diff = last - first
 
@@ -77,28 +77,19 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const user = await prisma.user.findUnique({
     where: { id },
     include: {
-      weightEntries: {
-        orderBy: { date: 'asc' },
-      },
+      weightEntries: { orderBy: { date: 'asc' } },
       posts: {
         orderBy: { createdAt: 'desc' },
         take: 5,
-        include: {
-          reactions: true,
-        },
+        include: { reactions: true },
       },
-      _count: {
-        select: {
-          posts: true,
-          weightEntries: true,
-        },
-      },
+      _count: { select: { posts: true, weightEntries: true } },
     },
   })
 
   if (!user) notFound()
 
-  const stats = computeWeightStats(user.weightEntries)
+  const stats = computeWeightStats(user.weightEntries, user.startWeight)
   const streak = computeStreak(user.weightEntries)
   const isOwnProfile = session?.user?.id === user.id
 
@@ -252,56 +243,41 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           </div>
         )}
 
-        {/* Recent posts */}
-        {user.posts.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider px-1">
-              Derniers partages
-            </h2>
-            {user.posts.map((post) => (
-              <div
-                key={post.id}
-                className="bg-[#1a1a1a] rounded-2xl p-5 border border-zinc-800"
-              >
-                <p className="text-white text-sm leading-relaxed">{post.content}</p>
-                <div className="flex items-center justify-between mt-3">
-                  <p className="text-xs text-zinc-600">
-                    {new Date(post.createdAt).toLocaleDateString('fr-FR', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
+        {/* Objectif de poids */}
+        {user.targetWeight && (
+          <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-zinc-800 mb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Objectif</p>
+                <p className="text-xl font-bold text-emerald-400">{user.targetWeight} kg</p>
+                {stats && (
+                  <p className="text-xs text-zinc-500 mt-1">
+                    {(stats.current - user.targetWeight) > 0
+                      ? `${(stats.current - user.targetWeight).toFixed(1)} kg à perdre`
+                      : '🎯 Objectif atteint !'}
                   </p>
-                  {post.reactions.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      {(['COURAGE', 'EN_FEU', 'SOLIDAIRE'] as const).map((type) => {
-                        const count = post.reactions.filter((r) => r.type === type).length
-                        if (count === 0) return null
-                        const emoji = type === 'COURAGE' ? '💪' : type === 'EN_FEU' ? '🔥' : '❤️'
-                        return (
-                          <span key={type} className="text-xs text-zinc-500 flex items-center gap-0.5">
-                            {emoji} {count}
-                          </span>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
-            ))}
-          </div>
-        )}
-
-        {user.posts.length === 0 && (
-          <div className="bg-[#1a1a1a] rounded-2xl p-8 border border-zinc-800 text-center">
-            <p className="text-3xl mb-2">✍️</p>
-            <p className="text-zinc-500 text-sm">Aucun partage pour l&apos;instant.</p>
-            {isOwnProfile && (
-              <Link
-                href="/feed"
-                className="inline-block mt-3 text-emerald-500 hover:text-emerald-400 text-sm font-medium transition"
-              >
-                Partager quelque chose →
-              </Link>
+              <span className="text-4xl">🎯</span>
+            </div>
+            {stats && user.startWeight && (
+              <div className="mt-3">
+                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(100, Math.max(0, Math.round(
+                        ((user.startWeight - stats.current) / (user.startWeight - user.targetWeight)) * 100
+                      )))}%`
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-zinc-600 mt-1 text-right">
+                  {Math.min(100, Math.max(0, Math.round(
+                    ((user.startWeight - stats.current) / (user.startWeight - user.targetWeight)) * 100
+                  )))}% accompli
+                </p>
+              </div>
             )}
           </div>
         )}

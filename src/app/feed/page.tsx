@@ -25,21 +25,21 @@ export default async function FeedPage() {
             href={`/profile/${session.user?.id}`}
             className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition"
           >
-            <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold ring-1 ring-emerald-500/30">
-              {(session.user?.name ?? 'M')
-                .split(' ')
-                .map((w) => w[0])
-                .join('')
-                .toUpperCase()
-                .slice(0, 2)}
-            </div>
+            {session.user?.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={session.user.image} alt="avatar" className="w-7 h-7 rounded-full object-cover ring-1 ring-emerald-500/30" />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold ring-1 ring-emerald-500/30">
+                {(session.user?.name ?? 'M').split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)}
+              </div>
+            )}
             <span className="hidden sm:block">{session.user?.name}</span>
           </Link>
         </div>
       </header>
 
       {/* Feed */}
-      <Feed r2Enabled={r2Enabled} />
+      <Feed r2Enabled={r2Enabled} userImage={session.user?.image ?? undefined} userName={session.user?.name ?? undefined} />
     </div>
   )
 }

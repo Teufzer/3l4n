@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 interface PostFormProps {
   onPostCreated?: () => void
   userName?: string
+  userImage?: string
   r2Enabled?: boolean
 }
 
@@ -21,7 +22,7 @@ function getInitials(name: string) {
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 const MAX_SIZE_BYTES = 10 * 1024 * 1024 // 10MB
 
-export default function PostForm({ onPostCreated, userName = 'Moi', r2Enabled = false }: PostFormProps) {
+export default function PostForm({ onPostCreated, userName = 'Moi', userImage, r2Enabled = false }: PostFormProps) {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -151,9 +152,14 @@ export default function PostForm({ onPostCreated, userName = 'Moi', r2Enabled = 
     >
       <div className="flex items-start gap-3">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold ring-2 ring-emerald-500/30 flex-shrink-0 mt-0.5">
-          {getInitials(userName)}
-        </div>
+        {userImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={userImage} alt="avatar" className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/30 flex-shrink-0 mt-0.5" />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold ring-2 ring-emerald-500/30 flex-shrink-0 mt-0.5">
+            {getInitials(userName)}
+          </div>
+        )}
 
         <textarea
           value={content}
