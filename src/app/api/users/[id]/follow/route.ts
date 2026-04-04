@@ -55,6 +55,10 @@ export async function POST(
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
+    if ((session.user as { banned?: boolean }).banned) {
+      return NextResponse.json({ error: 'Compte suspendu' }, { status: 403 })
+    }
+
     const { id: targetId } = await params
     const currentUserId = session.user.id
 

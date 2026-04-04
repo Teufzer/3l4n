@@ -3,6 +3,19 @@ import { auth } from '@/auth'
 import { isR2Configured, isAllowedImageType, MAX_SIZE_BYTES } from '@/lib/r2'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { randomUUID } from 'crypto'
+import { rateLimit } from '@/lib/rateLimit'
+
+function validateImageBytes(buffer: Buffer): boolean {
+  // JPEG: FF D8 FF
+  if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) return true
+  // PNG: 89 50 4E 47
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) return true
+  // GIF: 47 49 46
+  if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) return true
+  // WebP: 52 49 46 46 ... 57 45 42 50
+  if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46) return true
+  return false
+}
 
 // POST /api/upload
 // Body: FormData with field "file"
@@ -12,6 +25,11 @@ export async function POST(req: NextRequest) {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
+    // Rate limit: 20 uploads par user par heure
+    if (!rateLimit(`upload:${session.user.id}`, 20, 60 * 60 * 1000)) {
+      return NextResponse.json({ error: 'Trop d’uploads. Réessaie dans un moment.' }, { status: 429 })
     }
 
     if (!isR2Configured()) {
@@ -41,6 +59,10 @@ export async function POST(req: NextRequest) {
 
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
+
+    if (!validateImageBytes(buffer)) {
+      return NextResponse.json({ error: 'Fichier invalide (signature binaire non reconnue)' }, { status: 400 })
+    }
 
     const client = new S3Client({
       region: 'auto',

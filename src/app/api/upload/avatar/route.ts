@@ -5,6 +5,14 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { randomUUID } from 'crypto'
 import { prisma } from '@/lib/prisma'
 
+function validateImageBytes(buffer: Buffer): boolean {
+  if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) return true
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) return true
+  if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) return true
+  if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46) return true
+  return false
+}
+
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024 // 5MB
 
 // POST /api/upload/avatar
@@ -47,6 +55,10 @@ export async function POST(req: NextRequest) {
 
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
+
+    if (!validateImageBytes(buffer)) {
+      return NextResponse.json({ error: 'Fichier invalide (signature binaire non reconnue)' }, { status: 400 })
+    }
 
     const client = new S3Client({
       region: 'auto',

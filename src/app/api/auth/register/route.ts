@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
+import { rateLimit } from '@/lib/rateLimit'
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 inscriptions par IP par heure
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
+    if (!rateLimit(`register:${ip}`, 5, 60 * 60 * 1000)) {
+      return NextResponse.json({ error: 'Trop de tentatives. Réessaie dans une heure.' }, { status: 429 })
+    }
+
     const { email, password, name, username } = await req.json()
 
     if (!email || !password || !name) {

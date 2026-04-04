@@ -75,8 +75,21 @@ export async function PATCH(req: NextRequest) {
     }
     updateData.username = u
   }
-  if (name !== undefined) updateData.name = name?.trim() || null
-  if (bio !== undefined) updateData.bio = bio?.trim() || null
+  if (name !== undefined) {
+    const trimmedName = name?.trim() || null
+    if (trimmedName !== null) {
+      if (trimmedName.length < 1) return NextResponse.json({ error: 'Le nom ne peut pas être vide' }, { status: 400 })
+      if (trimmedName.length > 100) return NextResponse.json({ error: 'Le nom ne doit pas dépasser 100 caractères' }, { status: 400 })
+    }
+    updateData.name = trimmedName
+  }
+  if (bio !== undefined) {
+    const trimmedBio = bio?.trim() || null
+    if (trimmedBio !== null && trimmedBio.length > 200) {
+      return NextResponse.json({ error: 'La bio ne doit pas dépasser 200 caractères' }, { status: 400 })
+    }
+    updateData.bio = trimmedBio
+  }
   if (targetWeight !== undefined) updateData.targetWeight = targetWeight
   if (startWeight !== undefined) updateData.startWeight = startWeight
 

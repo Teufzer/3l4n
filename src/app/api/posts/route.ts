@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
+import { rateLimit } from '@/lib/rateLimit'
 
 // GET /api/posts?page=1&limit=10&userId=xxx
 export async function GET(req: NextRequest) {
@@ -118,6 +119,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ton compte est suspendu' }, { status: 403 })
     }
 
+    // Rate limit: 30 posts par user par heure
+    if (!rateLimit(`post:${session.user.id}`, 30, 60 * 60 * 1000)) {
+      return NextResponse.json({ error: 'Trop de posts. Réessaie dans un moment.' }, { status: 429 })
+    }
+
     const body = await req.json()
     const { content, imageUrl } = body
 
@@ -129,7 +135,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Le post ne doit pas dépasser 500 caractères' }, { status: 400 })
     }
 
-    // Validate imageUrl if provided
+    // Validate imageUrl: must come from R2
+    if (imageUrl && typeof imageUrl === 'string') {
+      const r2Base = process.env.R2_PUBLIC_URL?.replace(/\/$/, '')
+      if (!r2Base || !imageUrl.startsWith(r2Base + '/')) {
+        return NextResponse.json({ error: "URL d'image invalide" }, { status: 400 })
+      }
+    }
+
     const safeImageUrl = imageUrl && typeof imageUrl === 'string' ? imageUrl : null
 
     const post = await prisma.post.create({
