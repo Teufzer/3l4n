@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { upsertNotification } from '@/lib/notifications'
 import { auth } from '@/auth'
 import { rateLimit } from '@/lib/rateLimit'
 
@@ -67,6 +68,9 @@ export async function GET(req: NextRequest) {
           reactions: {
             select: { id: true, type: true, userId: true },
           },
+          reposts: {
+            select: { userId: true },
+          },
         },
       })
 
@@ -75,7 +79,12 @@ export async function GET(req: NextRequest) {
       const others = allPosts.filter((p) => !followedSet.has(p.userId))
       const sorted = [...followed, ...others].slice(0, limit)
 
-      const normalized = sorted.map(({ user, ...rest }) => ({ ...rest, author: user }))
+      const normalized = sorted.map(({ user, reposts, ...rest }) => ({
+        ...rest,
+        author: user,
+        repostsCount: reposts.length,
+        repostedByMe: currentUserId ? reposts.some((r) => r.userId === currentUserId) : false,
+      }))
       return NextResponse.json({ posts: normalized, page, limit })
     }
 
@@ -91,13 +100,18 @@ export async function GET(req: NextRequest) {
         reactions: {
           select: { id: true, type: true, userId: true },
         },
+        reposts: {
+          select: { userId: true },
+        },
       },
     })
 
     // Normalize: expose user as "author" for frontend
-    const normalized = posts.map(({ user, ...rest }) => ({
+    const normalized = posts.map(({ user, reposts, ...rest }) => ({
       ...rest,
       author: user,
+      repostsCount: reposts.length,
+      repostedByMe: currentUserId ? reposts.some((r) => r.userId === currentUserId) : false,
     }))
 
     return NextResponse.json({ posts: normalized, page, limit })
@@ -158,6 +172,9 @@ export async function POST(req: NextRequest) {
         reactions: {
           select: { id: true, type: true, userId: true },
         },
+        reposts: {
+          select: { userId: true },
+        },
       },
     })
 
@@ -189,8 +206,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const { user, ...rest } = post
-    return NextResponse.json({ post: { ...rest, author: user } }, { status: 201 })
+    const { user, reposts, ...rest } = post
+    return NextResponse.json({ post: { ...rest, author: user, repostsCount: 0, repostedByMe: false } }, { status: 201 })
   } catch (error) {
     console.error('[POST /api/posts]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

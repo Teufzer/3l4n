@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { upsertNotification } from '@/lib/notifications'
 import { auth } from '@/auth'
 import { ReactionType } from '@prisma/client'
 
@@ -53,17 +54,8 @@ export async function POST(
         data: { type: type as ReactionType, postId, userId },
       })
 
-      // Create REACTION notification for the post author (not self)
-      if (post.userId !== userId) {
-        await prisma.notification.create({
-          data: {
-            type: 'REACTION',
-            userId: post.userId,
-            actorId: userId,
-            postId,
-          },
-        })
-      }
+      // Create REACTION notification (deduplicated)
+      await upsertNotification({ userId: post.userId, actorId: userId, type: 'REACTION', postId })
     }
 
     // Return updated reactions for this post

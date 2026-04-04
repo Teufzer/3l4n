@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { upsertNotification } from '@/lib/notifications'
 import { auth } from '@/auth'
 
 // GET /api/posts/[id]/comments
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: postId } = await params
+    const session = await auth()
+    const currentUserId = session?.user?.id ?? null
 
     const comments = await prisma.comment.findMany({
       where: { postId },
@@ -17,12 +20,17 @@ export async function GET(
         user: {
           select: { id: true, name: true, avatar: true, image: true, username: true, verified: true },
         },
+        likes: {
+          select: { userId: true },
+        },
       },
     })
 
-    const normalized = comments.map(({ user, ...rest }) => ({
+    const normalized = comments.map(({ user, likes, ...rest }) => ({
       ...rest,
       author: user,
+      likesCount: likes.length,
+      likedByMe: currentUserId ? likes.some((l) => l.userId === currentUserId) : false,
     }))
 
     return NextResponse.json({ comments: normalized })

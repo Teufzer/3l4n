@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { upsertNotification } from '@/lib/notifications'
 import { auth } from '@/auth'
 
 // GET /api/users/[id]/follow — public status + counts
@@ -99,13 +100,7 @@ export async function POST(
       following = true
 
       // Create FOLLOW notification
-      await prisma.notification.create({
-        data: {
-          type: 'FOLLOW',
-          userId: targetId,
-          actorId: currentUserId,
-        },
-      })
+      await upsertNotification({ userId: targetId, actorId: followerId, type: 'FOLLOW' })
     }
 
     const followersCount = await prisma.follow.count({ where: { followingId: targetId } })
