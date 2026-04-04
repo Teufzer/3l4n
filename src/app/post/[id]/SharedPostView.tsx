@@ -154,10 +154,10 @@ export default function SharedPostView({ post, currentUserId }: Props) {
           {/* Author */}
           <div className="flex items-center gap-3">
             <Link href={authorHref} className="flex-shrink-0 group">
-              {post.author.image || post.author.avatar ? (
+              {post.author.avatar || post.author.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={(post.author.image || post.author.avatar)!}
+                  src={(post.author.avatar || post.author.image)!}
                   alt={post.author.name}
                   className="w-12 h-12 rounded-full object-cover ring-2 ring-emerald-500/30 group-hover:ring-emerald-500/60 transition-all"
                 />

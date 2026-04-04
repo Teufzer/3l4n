@@ -16,6 +16,7 @@ interface FeedProps {
 export default function Feed({ r2Enabled = false, userImage, userName }: FeedProps) {
   const { data: session } = useSession()
   const currentUserId = session?.user?.id
+  const isAdmin = (session?.user as { role?: string })?.role === "ADMIN"
 
   const [posts, setPosts] = useState<Post[]>([])
   const [page, setPage] = useState(1)
@@ -135,7 +136,7 @@ export default function Feed({ r2Enabled = false, userImage, userName }: FeedPro
         <>
           <div className="space-y-4">
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} currentUserId={currentUserId} onDeleted={handlePostDeleted} onUpdated={handlePostUpdated} />
+              <PostCard key={post.id} post={post} currentUserId={currentUserId} isAdmin={isAdmin} onDeleted={handlePostDeleted} onUpdated={handlePostUpdated} />
             ))}
           </div>
 

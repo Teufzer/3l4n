@@ -35,6 +35,7 @@ export interface Post {
 interface PostCardProps {
   post: Post
   currentUserId?: string
+  isAdmin?: boolean
   onDeleted?: (postId: string) => void
   onUpdated?: (post: Post) => void
 }
@@ -64,7 +65,7 @@ function getInitials(name: string) {
     .slice(0, 2)
 }
 
-export default function PostCard({ post, currentUserId, onDeleted, onUpdated }: PostCardProps) {
+export default function PostCard({ post, currentUserId, isAdmin, onDeleted, onUpdated }: PostCardProps) {
   const authorHref = (post.author as { username?: string }).username
     ? `/${(post.author as { username?: string }).username}`
     : `/profile/${post.author.id}`
@@ -87,6 +88,7 @@ export default function PostCard({ post, currentUserId, onDeleted, onUpdated }: 
 
   const menuRef = useRef<HTMLDivElement>(null)
   const isOwn = currentUserId && post.author.id === currentUserId
+  const canModerate = isOwn || isAdmin
 
   // Close menu on outside click
   useEffect(() => {
@@ -231,7 +233,7 @@ export default function PostCard({ post, currentUserId, onDeleted, onUpdated }: 
             <ReportButton postId={post.id} currentUserId={currentUserId} />
 
             {/* ··· menu — visible uniquement sur ses propres posts */}
-            {isOwn && (
+            {canModerate && (
               <div className="relative" ref={menuRef}>
                 <button
                   onClick={() => setMenuOpen((v) => !v)}

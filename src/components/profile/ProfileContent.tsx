@@ -230,7 +230,7 @@ export default function ProfileContent({
 
         {/* Avatar — overlaps banner */}
         <div className="px-4">
-          <div className="flex items-end justify-between -mt-10 relative z-10">
+          <div className="flex items-end justify-between -mt-6 relative z-10">
             {/* Avatar */}
             <div className="flex-shrink-0">
               {user.avatar || user.image ? (
