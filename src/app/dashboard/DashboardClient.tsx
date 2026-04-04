@@ -7,9 +7,10 @@ import WeightForm from '@/components/weight/WeightForm'
 
 interface DashboardClientProps {
   initialEntries: WeightDataPoint[]
+  targetWeight?: number | null
 }
 
-export default function DashboardClient({ initialEntries }: DashboardClientProps) {
+export default function DashboardClient({ initialEntries, targetWeight }: DashboardClientProps) {
   const [entries, setEntries] = useState<WeightDataPoint[]>(initialEntries)
   const [showForm, setShowForm] = useState(false)
 
