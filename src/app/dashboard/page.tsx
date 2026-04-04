@@ -69,11 +69,7 @@ export default async function DashboardPage() {
             <h2 className="text-xl font-semibold text-white mt-0.5">
               {session.user.name || session.user.email} 👋
             </h2>
-            {user?.targetWeight && (
-              <p className="text-xs text-emerald-500/70 mt-1">
-                🎯 Objectif : {user.targetWeight} kg
-              </p>
-            )}
+
           </div>
 
           {/* Dashboard client (stats + chart + form) */}

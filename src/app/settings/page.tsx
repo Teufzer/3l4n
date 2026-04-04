@@ -7,6 +7,7 @@ import Link from 'next/link'
 
 interface UserProfile {
   id: string
+  username: string | null
   name: string | null
   bio: string | null
   targetWeight: number | null
@@ -23,6 +24,7 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null)
 
   // Form state
+  const [username, setUsername] = useState('')
   const [name, setName] = useState('')
   const [bio, setBio] = useState('')
   const [startWeight, setStartWeight] = useState('')
@@ -117,6 +119,26 @@ export default function SettingsPage() {
             <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider">
               Infos personnelles
             </h2>
+
+            {/* Username */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="username" className="text-sm text-white/60 font-medium">
+                @username
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm">@</span>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase())}
+                  placeholder="teufeurs"
+                  maxLength={30}
+                  className="w-full bg-[#111] border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:border-emerald-500/50 transition"
+                />
+              </div>
+              <p className="text-xs text-white/20">Ton profil sera accessible sur 3l4n.com/@{username || 'username'}</p>
+            </div>
 
             {/* Nom */}
             <div className="flex flex-col gap-1.5">

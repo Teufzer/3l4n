@@ -184,14 +184,7 @@ export default function WeightStats({ data, goal, startWeight, targetWeight }: W
         </div>
       )}
 
-      {/* GoalCard détaillée si objectif et poids de départ définis */}
-      {targetWeight != null && effectiveStart !== null && (
-        <GoalCard
-          startWeight={effectiveStart}
-          targetWeight={targetWeight}
-          currentWeight={current}
-        />
-      )}
+
     </div>
   )
 }
