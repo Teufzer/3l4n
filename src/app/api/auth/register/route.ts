@@ -5,6 +5,8 @@ import { rateLimit } from '@/lib/rateLimit'
 import { sendVerificationEmail } from '@/lib/email'
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const RESERVED_USERNAMES = ['admin', 'administrator', 'support', 'help', 'mod', 'moderator', 'staff', 'team', '3l4n', 'official', 'security', 'killian', 'teuf']
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,9 +25,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (password.length < 8) {
+    // F-Bonus: strict email validation
+    if (!EMAIL_REGEX.test(email)) {
+      return NextResponse.json({ error: 'Email invalide' }, { status: 400 })
+    }
+
+    // F-005: password policy
+    if (password.length < 8 || password.trim().length === 0) {
       return NextResponse.json(
-        { error: 'Le mot de passe doit faire au moins 8 caractères' },
+        { error: 'Le mot de passe doit faire au moins 8 caractères et ne pas être vide' },
         { status: 400 }
       )
     }
@@ -35,6 +43,14 @@ export async function POST(req: NextRequest) {
       if (!USERNAME_REGEX.test(username)) {
         return NextResponse.json(
           { error: 'Le @username doit faire 3 à 30 caractères (lettres, chiffres, _)' },
+          { status: 400 }
+        )
+      }
+
+      // F-008: reserved usernames
+      if (RESERVED_USERNAMES.includes(username.toLowerCase())) {
+        return NextResponse.json(
+          { error: 'Ce @username est réservé et ne peut pas être utilisé' },
           { status: 400 }
         )
       }

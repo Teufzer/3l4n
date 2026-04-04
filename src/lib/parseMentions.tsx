@@ -26,8 +26,8 @@ export function parseMentions(text: string): React.ReactNode {
       )
     }
 
-    // URL
-    if (/^https?:\/\//.test(part)) {
+    // URL — F-004: validate URL strictly to prevent XSS via malicious href
+    if (/^https?:\/\/[^\s<>"'`]+$/.test(part)) {
       // Display a shorter version of the URL
       let display = part.replace(/^https?:\/\//, '').replace(/\/$/, '')
       if (display.length > 40) display = display.slice(0, 40) + '…'

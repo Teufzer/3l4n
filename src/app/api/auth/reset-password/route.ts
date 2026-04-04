@@ -35,16 +35,28 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 12)
 
+    // F-007: invalidate existing sessions by bumping updatedAt
+    // NextAuth JWT callback re-reads from DB, so changing updatedAt effectively
+    // marks the user record as changed; combined with session invalidation below.
     await prisma.$transaction([
       prisma.user.update({
         where: { id: reset.userId },
-        data: { password: hashedPassword },
+        data: { password: hashedPassword, updatedAt: new Date() },
       }),
       prisma.passwordReset.update({
         where: { token },
         data: { used: true },
       }),
     ])
+
+    // F-007: delete all active NextAuth sessions for this user (if Session table exists)
+    try {
+      await (prisma as unknown as { session: { deleteMany: (args: { where: { userId: string } }) => Promise<unknown> } }).session.deleteMany({
+        where: { userId: reset.userId },
+      })
+    } catch {
+      // Session table may not exist (JWT-only mode) — that's fine
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

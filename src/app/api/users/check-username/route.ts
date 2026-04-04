@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/
+// F-008: reserved usernames to prevent impersonation
+const RESERVED_USERNAMES = ['admin', 'administrator', 'support', 'help', 'mod', 'moderator', 'staff', 'team', '3l4n', 'official', 'security', 'killian', 'teuf']
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -16,6 +18,11 @@ export async function GET(req: NextRequest) {
       { available: false, suggestions: [], error: 'Format invalide (3-30 caractères, lettres, chiffres, _)' },
       { status: 200 }
     )
+  }
+
+  // F-008: block reserved usernames
+  if (RESERVED_USERNAMES.includes(q)) {
+    return NextResponse.json({ available: false, suggestions: [] })
   }
 
   const existing = await prisma.user.findUnique({

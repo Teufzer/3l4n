@@ -73,10 +73,29 @@ export default function RegisterPage() {
     }
   }, [username])
 
+  // F-005: password strength helper
+  const getPasswordStrength = (pwd: string): { label: string; color: string; width: string } | null => {
+    if (!pwd) return null
+    if (pwd.length < 8) return { label: 'Trop court', color: 'bg-red-500', width: 'w-1/4' }
+    const hasUpper = /[A-Z]/.test(pwd)
+    const hasDigit = /[0-9]/.test(pwd)
+    const hasSpecial = /[^A-Za-z0-9]/.test(pwd)
+    const score = [hasUpper, hasDigit, hasSpecial].filter(Boolean).length
+    if (score === 0) return { label: 'Faible', color: 'bg-red-500', width: 'w-1/3' }
+    if (score === 1) return { label: 'Moyen', color: 'bg-yellow-500', width: 'w-2/3' }
+    return { label: 'Fort', color: 'bg-emerald-500', width: 'w-full' }
+  }
+
+  const passwordStrength = getPasswordStrength(password)
+
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault()
     if (password.length < 8) {
       setError('Le mot de passe doit faire au moins 8 caractères')
+      return
+    }
+    if (password.trim().length === 0) {
+      setError('Le mot de passe ne peut pas être uniquement des espaces')
       return
     }
     setError('')
@@ -252,6 +271,24 @@ export default function RegisterPage() {
                   placeholder="••••••••"
                   className="w-full px-4 py-3 rounded-xl bg-[#0f0f0f] border border-zinc-700 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition text-sm"
                 />
+                {/* F-005: password strength indicator */}
+                {passwordStrength && (
+                  <div className="mt-2">
+                    <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${passwordStrength.color} ${passwordStrength.width}`} />
+                    </div>
+                    <p className={`mt-1 text-xs ${
+                      passwordStrength.label === 'Fort' ? 'text-emerald-400'
+                      : passwordStrength.label === 'Moyen' ? 'text-yellow-400'
+                      : 'text-red-400'
+                    }`}>
+                      Force : {passwordStrength.label}
+                    </p>
+                  </div>
+                )}
+                {password.length > 0 && password.length < 8 && (
+                  <p className="mt-1 text-xs text-red-400">Minimum 8 caractères requis ({password.length}/8)</p>
+                )}
               </div>
 
               <button
