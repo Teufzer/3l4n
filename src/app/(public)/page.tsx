@@ -26,20 +26,21 @@ export default async function Home() {
       <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         <div className="max-w-lg">
 
-          {/* Logo géant */}
-          <h1 className="text-8xl sm:text-9xl font-black tracking-tight mb-4">
+          {/* Logo */}
+          <h1 className="text-8xl sm:text-9xl font-black tracking-tight mb-2">
             3l<span className="text-emerald-400">4</span>n
           </h1>
 
-          {/* Explication */}
-          <p className="text-white/40 text-base mb-3">
-            <span className="text-white/70">3</span>l<span className="text-white/70">4</span>n = <span className="text-emerald-400 font-semibold">élan</span>
+          {/* Equation */}
+          <p className="text-white/40 text-lg mb-6 tracking-wide">
+            3l<span className="text-emerald-400">4</span>n
+            <span className="mx-2 text-white/20">=</span>
+            <span className="text-emerald-400 font-semibold">élan</span>
           </p>
 
           {/* Accroche */}
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
-            Perdre du poids,{' '}
-            <span className="text-emerald-400">ensemble</span>.
+            Ton élan commence ici.
           </h2>
 
           {/* Sous-titre */}
