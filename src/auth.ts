@@ -26,7 +26,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         // Rate limit login: 10 tentatives / 15 min par email
-        if (!rateLimit(`login:${credentials.email}`, 10, 15 * 60 * 1000)) {
+        if (!await rateLimit(`login:${credentials.email}`, 10, 15 * 60 * 1000)) {
           return null
         }
 

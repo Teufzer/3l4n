@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: 1 resend per 5 minutes per user
-    if (!rateLimit(`resend-verification:${session.user.id}`, 1, 5 * 60 * 1000)) {
+    if (!await rateLimit(`resend-verification:${session.user.id}`, 1, 5 * 60 * 1000)) {
       return NextResponse.json(
         { error: 'Attends 5 minutes avant de renvoyer un email.' },
         { status: 429 }

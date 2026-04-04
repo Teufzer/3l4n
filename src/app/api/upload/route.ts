@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: 20 uploads par user par heure
-    if (!rateLimit(`upload:${session.user.id}`, 20, 60 * 60 * 1000)) {
+    if (!await rateLimit(`upload:${session.user.id}`, 20, 60 * 60 * 1000)) {
       return NextResponse.json({ error: 'Trop d’uploads. Réessaie dans un moment.' }, { status: 429 })
     }
 

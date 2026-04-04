@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: 30 posts par user par heure
-    if (!rateLimit(`post:${session.user.id}`, 30, 60 * 60 * 1000)) {
+    if (!await rateLimit(`post:${session.user.id}`, 30, 60 * 60 * 1000)) {
       return NextResponse.json({ error: 'Trop de posts. Réessaie dans un moment.' }, { status: 429 })
     }
 
