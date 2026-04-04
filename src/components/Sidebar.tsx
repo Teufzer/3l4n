@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import VerifiedBadge from '@/components/VerifiedBadge'
 
 const navItems = [
   {
@@ -95,7 +96,10 @@ export default function Sidebar() {
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-white text-sm font-bold truncate">{user.name}</p>
+            <span className="flex items-center gap-1">
+              <p className="text-white text-sm font-bold truncate">{user.name}</p>
+              {(user as { verified?: boolean }).verified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
+            </span>
             <p className="text-white/40 text-xs truncate">@{user.username || 'user'}</p>
           </div>
         </Link>

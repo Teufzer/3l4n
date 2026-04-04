@@ -73,7 +73,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.id && !user) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, banned: true, image: true, avatar: true, username: true },
+          select: { role: true, banned: true, image: true, avatar: true, username: true, verified: true },
         })
         if (dbUser) {
           token.role = dbUser.role
@@ -81,6 +81,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // Uniquement l'avatar R2, jamais la photo Google
           token.image = dbUser.avatar || null
           token.username = dbUser.username
+          token.verified = dbUser.verified
         }
       }
       return token
@@ -92,6 +93,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role as 'USER' | 'ADMIN'
         session.user.banned = token.banned as boolean
         session.user.username = token.username as string | null | undefined
+        session.user.verified = token.verified as boolean
       }
       return session
     },
