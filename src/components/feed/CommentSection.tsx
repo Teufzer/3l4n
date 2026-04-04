@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { parseMentions } from '@/lib/parseMentions'
 import ReportButton from './ReportButton'
 import VerifiedBadge from '@/components/VerifiedBadge'
 

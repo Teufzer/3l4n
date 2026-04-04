@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
@@ -88,6 +88,19 @@ export default function SharedPostView({ post: initialPost, currentUserId }: { p
   const [comments, setComments] = useState<Comment[]>(initialPost.comments)
   const [commentText, setCommentText] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
+  const [mentionSuggestions, setMentionSuggestions] = useState<{id:string;name:string;username:string|null;avatar:string|null;image:string|null}[]>([])
+
+  // Fetch mention suggestions
+  const prevMentionQuery = useRef<string | null>(null)
+  if (mentionQuery !== null && mentionQuery !== prevMentionQuery.current) {
+    prevMentionQuery.current = mentionQuery
+    if (mentionQuery.length > 0) {
+      fetch(`/api/users/search?q=${encodeURIComponent(mentionQuery)}`).then(r=>r.json()).then(d=>setMentionSuggestions(d.users||[])).catch(()=>{})
+    } else {
+      setMentionSuggestions([])
+    }
+  }
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [commentLikes, setCommentLikes] = useState<Record<string, { count: number; liked: boolean }>>(() => {
     const init: Record<string, { count: number; liked: boolean }> = {}
@@ -271,14 +284,41 @@ export default function SharedPostView({ post: initialPost, currentUserId }: { p
             <div className="w-9 h-9 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold flex-shrink-0">
               {(session?.user?.name || 'U')[0].toUpperCase()}
             </div>
-            <div className="flex-1 flex gap-2">
-              <input
+            <div className="flex-1 flex gap-2 relative">
+              <textarea
                 value={commentText}
-                onChange={e => setCommentText(e.target.value)}
-                placeholder="Ajoute un commentaire..."
-                className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-white text-sm placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition"
+                onChange={e => {
+                  setCommentText(e.target.value)
+                  // Simple @mention detection
+                  const val = e.target.value
+                  const cursor = e.target.selectionStart ?? val.length
+                  const match = val.slice(0, cursor).match(/@(\w*)$/)
+                  if (match) setMentionQuery(match[1])
+                  else { setMentionQuery(null); setMentionSuggestions([]) }
+                }}
+                placeholder="Ajoute un commentaire... tape @ pour mentionner"
+                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition resize-none"
                 maxLength={500}
+                rows={1}
               />
+              {mentionSuggestions.length > 0 && (
+                <div className="absolute left-0 bottom-full mb-1 z-50 bg-[#1e1e1e] border border-white/10 rounded-xl shadow-xl overflow-hidden w-52">
+                  {mentionSuggestions.map(u => (
+                    <button key={u.id} type="button"
+                      onMouseDown={e => { e.preventDefault()
+                        const val = commentText
+                        const lastAt = val.lastIndexOf('@')
+                        setCommentText(val.slice(0, lastAt) + '@' + u.username + ' ')
+                        setMentionQuery(null); setMentionSuggestions([])
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-left text-white/70 hover:bg-white/5 text-xs"
+                    >
+                      {(u.avatar || u.image) ? <img src={(u.avatar || u.image)!} alt="" className="w-6 h-6 rounded-full object-cover" /> : <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold">{(u.name||'?')[0]}</div>}
+                      <span>@{u.username}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
               <button
                 type="submit"
                 disabled={!commentText.trim() || submitting}
