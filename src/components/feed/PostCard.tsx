@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { parseMentions } from '@/lib/parseMentions'
 import VerifiedBadge from '@/components/VerifiedBadge'
-import CommentSection from './CommentSection'
 import ReportButton from './ReportButton'
 
 export type ReactionType = 'COURAGE' | 'EN_FEU' | 'SOLIDAIRE'
@@ -391,7 +390,6 @@ export default function PostCard({ post, currentUserId, isAdmin, r2Enabled = fal
         </div>
 
         {/* Comments collapsed */}
-        <CommentSection postId={post.id} currentUserId={currentUserId} r2Enabled={r2Enabled} />
       </article>
 
       {/* Lightbox modal */}
