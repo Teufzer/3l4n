@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface ProfileEditModalProps {
@@ -20,20 +20,6 @@ export default function ProfileEditModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  const dialogRef = useRef<HTMLDialogElement>(null)
-
-  useEffect(() => {
-    if (open) {
-      dialogRef.current?.showModal()
-      // Reset to current values when opening
-      setName(currentName)
-      setBio(currentBio)
-      setError(null)
-    } else {
-      dialogRef.current?.close()
-    }
-  }, [open, currentName, currentBio])
-
   const handleClose = () => {
     if (loading) return
     setOpen(false)
@@ -87,15 +73,12 @@ export default function ProfileEditModal({
         Modifier mon profil
       </button>
 
-      <dialog
-        ref={dialogRef}
-        className="bg-transparent p-0 w-full max-w-sm rounded-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm"
-        onClose={handleClose}
-        onClick={(e) => {
-          if (e.target === dialogRef.current) handleClose()
-        }}
+      {open && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+        onClick={(e) => { if (e.target === e.currentTarget) handleClose() }}
       >
-        <div className="bg-[#1a1a1a] border border-zinc-700 rounded-2xl p-6 shadow-2xl">
+        <div className="bg-[#1a1a1a] border border-zinc-700 rounded-2xl p-6 shadow-2xl w-full max-w-sm">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-white font-semibold text-lg">Modifier le profil</h2>
             <button
@@ -175,7 +158,8 @@ export default function ProfileEditModal({
             </div>
           </form>
         </div>
-      </dialog>
+      </div>
+      )}
     </>
   )
 }

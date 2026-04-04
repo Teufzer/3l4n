@@ -137,7 +137,7 @@ export default function SettingsPage() {
                   className="w-full bg-[#111] border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:border-emerald-500/50 transition"
                 />
               </div>
-              <p className="text-xs text-white/20">Ton profil sera accessible sur 3l4n.com/@{username || 'username'}</p>
+              <p className="text-xs text-white/20">Ton profil sera accessible sur 3l4n.com/{username || 'username'}</p>
             </div>
 
             {/* Nom */}
