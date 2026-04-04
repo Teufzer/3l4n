@@ -4,10 +4,12 @@ import { auth } from '@/auth'
 
 // GET /api/posts/[id] — public, returns post with author + reactions + comments
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    const currentUserId = session?.user?.id
     const { id } = await params
 
     const post = await prisma.post.findUnique({
@@ -20,6 +22,7 @@ export async function GET(
             username: true,
             avatar: true,
             image: true,
+            verified: true,
             banned: true,
           },
         },
@@ -30,9 +33,19 @@ export async function GET(
           orderBy: { createdAt: 'asc' },
           include: {
             user: {
-              select: { id: true, name: true, username: true, avatar: true, image: true },
+              select: { id: true, name: true, username: true, avatar: true, image: true, verified: true },
             },
+            likes: currentUserId
+              ? { where: { userId: currentUserId }, select: { id: true } }
+              : false,
+            _count: { select: { likes: true } },
           },
+        },
+        reposts: {
+          select: { userId: true },
+        },
+        _count: {
+          select: { comments: true, reposts: true },
         },
       },
     })
@@ -45,16 +58,25 @@ export async function GET(
       return NextResponse.json({ error: 'Post introuvable' }, { status: 404 })
     }
 
-    const { user, comments, ...rest } = post
+    const { user, comments, reposts, _count, ...rest } = post
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { banned: _banned, ...safeUser } = user
+
+    const repostsCount = _count.reposts
+    const commentsCount = _count.comments
+    const repostedByMe = currentUserId ? reposts.some((r) => r.userId === currentUserId) : false
 
     const normalized = {
       ...rest,
       author: safeUser,
-      comments: comments.map(({ user: commentUser, ...c }) => ({
+      repostsCount,
+      commentsCount,
+      repostedByMe,
+      comments: comments.map(({ user: commentUser, likes, _count: cCount, ...c }) => ({
         ...c,
         author: commentUser,
+        likesCount: cCount.likes,
+        likedByMe: currentUserId ? (likes as { id: string }[]).length > 0 : false,
       })),
     }
 

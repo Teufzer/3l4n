@@ -100,6 +100,9 @@ export async function GET(req: NextRequest) {
         reactions: {
           select: { id: true, type: true, userId: true },
         },
+        _count: {
+          select: { comments: true, reposts: true }
+        },
         reposts: {
           select: { userId: true },
         },
@@ -107,11 +110,12 @@ export async function GET(req: NextRequest) {
     })
 
     // Normalize: expose user as "author" for frontend
-    const normalized = posts.map(({ user, reposts, ...rest }) => ({
+    const normalized = posts.map(({ user, reposts, _count, ...rest }) => ({
       ...rest,
       author: user,
       repostsCount: reposts.length,
       repostedByMe: currentUserId ? reposts.some((r) => r.userId === currentUserId) : false,
+      commentsCount: _count?.comments ?? 0,
     }))
 
     return NextResponse.json({ posts: normalized, page, limit })
@@ -171,6 +175,9 @@ export async function POST(req: NextRequest) {
         },
         reactions: {
           select: { id: true, type: true, userId: true },
+        },
+        _count: {
+          select: { comments: true, reposts: true }
         },
         reposts: {
           select: { userId: true },

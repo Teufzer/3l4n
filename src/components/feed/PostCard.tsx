@@ -30,6 +30,7 @@ export interface Post {
     image?: string | null
   }
   reactions: Reaction[]
+  commentsCount?: number
   repostsCount?: number
   repostedByMe?: boolean
 }
@@ -254,6 +255,16 @@ export default function PostCard({ post, currentUserId, isAdmin, onDeleted, onUp
             </Link>
           </div>
           <div className="ml-auto flex items-center gap-1">
+            <Link
+              href={`/post/${post.id}`}
+              className="p-1.5 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/5 transition-all flex items-center gap-1"
+              title="Voir les commentaires"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              {(post.commentsCount ?? 0) > 0 && <span className="text-xs">{post.commentsCount}</span>}
+            </Link>
             <button
               onClick={handleShare}
               className="p-1.5 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/5 transition-all"
