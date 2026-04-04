@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import VerifiedBadge from '@/components/VerifiedBadge'
 import { Session } from 'next-auth'
 import WeightChart, { WeightDataPoint } from '@/components/weight/WeightChart'
 import WeightStats from '@/components/weight/WeightStats'
-import ProfileEditModal from '@/components/profile/ProfileEditModal'
+
 import PostCard, { Post } from '@/components/feed/PostCard'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -213,12 +214,12 @@ export default function ProfileContent({
             {/* Edit button */}
             {isOwnProfile && (
               <div className="mb-2">
-                <ProfileEditModal
-                  userId={user.id}
-                  currentName={user.name ?? ''}
-                  currentBio={user.bio ?? ''}
-                  buttonVariant="outline"
-                />
+                <Link
+                  href="/settings"
+                  className="px-4 py-1.5 rounded-full border border-white/20 text-white text-sm font-semibold hover:bg-white/10 transition"
+                >
+                  Modifier le profil
+                </Link>
               </div>
             )}
           </div>

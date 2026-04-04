@@ -72,6 +72,7 @@ export default function PostCard({ post, currentUserId, onDeleted, onUpdated }: 
   // Edit/delete state
   const [menuOpen, setMenuOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [editContent, setEditContent] = useState(post.content)
   const [editLoading, setEditLoading] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -160,8 +161,7 @@ export default function PostCard({ post, currentUserId, onDeleted, onUpdated }: 
   }
 
   const handleDelete = async () => {
-    const confirmed = window.confirm('Supprimer ce post définitivement ?')
-    if (!confirmed) return
+    // modal handles confirmation
     setDeleteLoading(true)
     setMenuOpen(false)
     try {
@@ -189,9 +189,9 @@ export default function PostCard({ post, currentUserId, onDeleted, onUpdated }: 
       >
         {/* Header */}
         <div className="flex items-center gap-3 relative">
-          {(post.author.image || post.author.avatar) ? (
+          {(post.author.avatar || post.author.image) ? (
             <img
-              src={(post.author.image || post.author.avatar)!}
+              src={(post.author.avatar || post.author.image)!}
               alt={post.author.name}
               className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/30"
             />
@@ -245,7 +245,7 @@ export default function PostCard({ post, currentUserId, onDeleted, onUpdated }: 
                       <span>✏️</span> Modifier
                     </button>
                     <button
-                      onClick={handleDelete}
+                      onClick={() => { setMenuOpen(false); setDeleteModalOpen(true) }}
                       className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
                     >
                       <span>🗑️</span> Supprimer
@@ -403,6 +403,39 @@ export default function PostCard({ post, currentUserId, onDeleted, onUpdated }: 
                   {editLoading ? 'Sauvegarde…' : 'Sauvegarder'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal suppression custom */}
+      {deleteModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+          onClick={() => setDeleteModalOpen(false)}
+        >
+          <div
+            className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-6 w-full max-w-sm space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-1">
+              <h2 className="text-white font-bold text-lg">Supprimer ce post ?</h2>
+              <p className="text-white/40 text-sm">Cette action est irréversible.</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteModalOpen(false)}
+                className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/70 text-sm font-medium hover:bg-white/5 transition"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => { setDeleteModalOpen(false); handleDelete() }}
+                disabled={deleteLoading}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-white text-sm font-bold transition disabled:opacity-50"
+              >
+                {deleteLoading ? 'Suppression…' : 'Supprimer'}
+              </button>
             </div>
           </div>
         </div>
