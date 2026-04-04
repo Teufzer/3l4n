@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import ReportButton from './ReportButton'
 
 interface CommentAuthor {
@@ -20,6 +21,14 @@ interface Comment {
 interface CommentSectionProps {
   postId: string
   currentUserId?: string
+}
+
+interface UserSuggestion {
+  id: string
+  username: string | null
+  name: string | null
+  avatar: string | null
+  image: string | null
 }
 
 function getInitials(name: string) {
@@ -64,6 +73,31 @@ function Avatar({ author, size = 'sm' }: { author: CommentAuthor; size?: 'sm' | 
   )
 }
 
+/** Renders comment text, turning @mentions into emerald links */
+function CommentText({ content }: { content: string }) {
+  const parts = content.split(/(@[\w]+)/g)
+  return (
+    <p className="text-white/70 text-xs leading-relaxed whitespace-pre-wrap">
+      {parts.map((part, i) => {
+        if (/^@[\w]+$/.test(part)) {
+          const username = part.slice(1)
+          return (
+            <Link
+              key={i}
+              href={`/${username}`}
+              className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {part}
+            </Link>
+          )
+        }
+        return <span key={i}>{part}</span>
+      })}
+    </p>
+  )
+}
+
 export default function CommentSection({ postId, currentUserId }: CommentSectionProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [comments, setComments] = useState<Comment[]>([])
@@ -71,7 +105,76 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
   const [loaded, setLoaded] = useState(false)
   const [text, setText] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  // Mention autocomplete state
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
+  const [mentionSuggestions, setMentionSuggestions] = useState<UserSuggestion[]>([])
+  const [mentionIndex, setMentionIndex] = useState(0)
+  const [mentionCursorPos, setMentionCursorPos] = useState(0)
+
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const mentionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Fetch mention suggestions with debounce
+  useEffect(() => {
+    if (mentionQuery === null) {
+      setMentionSuggestions([])
+      return
+    }
+    if (mentionDebounceRef.current) clearTimeout(mentionDebounceRef.current)
+    mentionDebounceRef.current = setTimeout(async () => {
+      if (!mentionQuery) {
+        setMentionSuggestions([])
+        return
+      }
+      try {
+        const res = await fetch(`/api/users/search?q=${encodeURIComponent(mentionQuery)}`)
+        if (res.ok) {
+          const data = await res.json()
+          setMentionSuggestions(data.users ?? [])
+          setMentionIndex(0)
+        }
+      } catch {
+        // ignore
+      }
+    }, 200)
+    return () => {
+      if (mentionDebounceRef.current) clearTimeout(mentionDebounceRef.current)
+    }
+  }, [mentionQuery])
+
+  const insertMention = useCallback((user: UserSuggestion) => {
+    const username = user.username ?? ''
+    const before = text.slice(0, mentionCursorPos)
+    const after = text.slice(mentionCursorPos).replace(/^@\w*/, '')
+    const newContent = before + `@${username} ` + after
+    setText(newContent)
+    setMentionQuery(null)
+    setMentionSuggestions([])
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const pos = (before + `@${username} `).length
+        textareaRef.current.focus()
+        textareaRef.current.setSelectionRange(pos, pos)
+      }
+    }, 0)
+  }, [text, mentionCursorPos])
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value
+    setText(val)
+
+    const cursor = e.target.selectionStart ?? val.length
+    const textBeforeCursor = val.slice(0, cursor)
+    const match = textBeforeCursor.match(/@(\w*)$/)
+    if (match) {
+      setMentionQuery(match[1])
+      setMentionCursorPos(cursor - match[0].length)
+    } else {
+      setMentionQuery(null)
+      setMentionSuggestions([])
+    }
+  }
 
   const fetchComments = async () => {
     if (loaded) return
@@ -120,6 +223,26 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionSuggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setMentionIndex((i) => Math.min(i + 1, mentionSuggestions.length - 1))
+        return
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setMentionIndex((i) => Math.max(i - 1, 0))
+        return
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault()
+        insertMention(mentionSuggestions[mentionIndex])
+        return
+      } else if (e.key === 'Escape') {
+        setMentionQuery(null)
+        setMentionSuggestions([])
+        return
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSubmit(e as unknown as React.FormEvent)
@@ -174,27 +297,67 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
                     />
                   </div>
                 </div>
-                <p className="text-white/70 text-xs leading-relaxed whitespace-pre-wrap">
-                  {comment.content}
-                </p>
+                <CommentText content={comment.content} />
               </div>
             </div>
           ))}
 
           {/* Input form */}
           {currentUserId ? (
-            <form onSubmit={handleSubmit} className="flex gap-2 items-end">
-              <textarea
-                ref={textareaRef}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                rows={1}
-                maxLength={300}
-                placeholder="Ajouter un commentaire… (Entrée pour envoyer)"
-                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white/80 placeholder-white/30 resize-none focus:outline-none focus:border-emerald-500/50 focus:bg-white/8 transition-colors"
-                style={{ minHeight: '36px', maxHeight: '120px' }}
-              />
+            <form onSubmit={handleSubmit} className="flex gap-2 items-end relative">
+              <div className="flex-1 relative">
+                <textarea
+                  ref={textareaRef}
+                  value={text}
+                  onChange={handleContentChange}
+                  onKeyDown={handleKeyDown}
+                  rows={1}
+                  maxLength={300}
+                  placeholder="Ajouter un commentaire… @mention possible"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white/80 placeholder-white/30 resize-none focus:outline-none focus:border-emerald-500/50 focus:bg-white/8 transition-colors"
+                  style={{ minHeight: '36px', maxHeight: '120px' }}
+                />
+
+                {/* Mention suggestions dropdown */}
+                {mentionSuggestions.length > 0 && (
+                  <div className="absolute left-0 bottom-full mb-1 z-50 bg-[#1e1e1e] border border-white/10 rounded-xl shadow-xl overflow-hidden w-52">
+                    {mentionSuggestions.map((user, i) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          insertMention(user)
+                        }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${
+                          i === mentionIndex
+                            ? 'bg-emerald-500/20 text-emerald-400'
+                            : 'text-white/70 hover:bg-white/5'
+                        }`}
+                      >
+                        {user.avatar || user.image ? (
+                          <img
+                            src={user.avatar ?? user.image ?? ''}
+                            alt=""
+                            className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold flex-shrink-0">
+                            {(user.name ?? user.username ?? '?')[0].toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold truncate">@{user.username}</div>
+                          {user.name && (
+                            <div className="text-[10px] text-white/40 truncate">{user.name}</div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <button
                 type="submit"
                 disabled={!text.trim() || submitting}
