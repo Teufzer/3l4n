@@ -117,7 +117,7 @@ export default function AdminUsersClient({ initialUsers }: Props) {
               return (
                 <tr
                   key={user.id}
-                  className={`transition-colors hover:bg-white/2 ${user.banned ? 'opacity-50' : ''}`}
+                  className={`transition-colors hover:bg-white/[0.02] ${user.banned ? 'opacity-50' : ''}`}
                 >
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
