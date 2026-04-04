@@ -114,6 +114,7 @@ function EmptyState({ tab }: { tab: Tab }) {
     all: { emoji: '🔔', title: 'Tout est calme ici', sub: 'Tes notifications apparaîtront ici quand quelqu\'un interagit avec toi.' },
     mentions: { emoji: '@', title: 'Aucune mention', sub: 'Personne ne t\'a encore mentionné dans un post ou commentaire.' },
     reactions: { emoji: '❤️', title: 'Aucune réaction', sub: 'Quand quelqu\'un réagit à tes posts, tu le verras ici.' },
+    follows: { emoji: '👤', title: 'Aucun abonné', sub: "Quand quelqu'un te suit, tu le verras ici" },
     comments: { emoji: '💬', title: 'Aucun commentaire', sub: 'Les commentaires sur tes posts apparaîtront ici.' },
   }
   const { emoji, title, sub } = messages[tab]
