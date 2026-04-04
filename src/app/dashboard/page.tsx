@@ -35,7 +35,7 @@ export default async function DashboardPage() {
 
   const needsOnboarding = weightCount === 0
   const isGoogleUser = user?.accounts?.some((a) => a.provider === 'google') ?? false
-  const needsUsername = isGoogleUser && !user?.username
+  const needsUsername = !user?.username // tout le monde doit avoir un @username
 
   return (
     <>
