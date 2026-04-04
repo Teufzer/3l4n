@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 
+const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/
+
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, name } = await req.json()
+    const { email, password, name, username } = await req.json()
 
     if (!email || !password || !name) {
       return NextResponse.json(
@@ -18,6 +20,27 @@ export async function POST(req: NextRequest) {
         { error: 'Le mot de passe doit faire au moins 8 caractères' },
         { status: 400 }
       )
+    }
+
+    // Validate username if provided
+    if (username) {
+      if (!USERNAME_REGEX.test(username)) {
+        return NextResponse.json(
+          { error: 'Le @username doit faire 3 à 30 caractères (lettres, chiffres, _)' },
+          { status: 400 }
+        )
+      }
+
+      const existingUsername = await prisma.user.findUnique({
+        where: { username: username.toLowerCase() },
+      })
+
+      if (existingUsername) {
+        return NextResponse.json(
+          { error: 'Ce @username est déjà pris' },
+          { status: 409 }
+        )
+      }
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -38,6 +61,7 @@ export async function POST(req: NextRequest) {
         email,
         name,
         password: hashedPassword,
+        ...(username ? { username: username.toLowerCase() } : {}),
       },
     })
 
@@ -47,6 +71,7 @@ export async function POST(req: NextRequest) {
           id: user.id,
           email: user.email,
           name: user.name,
+          username: user.username,
         },
       },
       { status: 201 }
