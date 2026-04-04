@@ -345,8 +345,8 @@ export default function PostCard({ post, currentUserId, isAdmin, onDeleted, onUp
           </button>
         )}
 
-        {/* Reactions */}
-        <div className="flex gap-2 pt-1 flex-wrap">
+        {/* Actions — réactions + repost + commentaires + partager */}
+        <div className="flex items-center gap-1 pt-1 flex-wrap">
           {REACTIONS.map(({ type, emoji, label }) => {
             const count = countByType(type)
             const reacted = hasReacted(type)
@@ -355,11 +355,8 @@ export default function PostCard({ post, currentUserId, isAdmin, onDeleted, onUp
                 key={type}
                 onClick={() => handleReact(type)}
                 disabled={loading === type}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all
-                  ${reacted
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                    : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
-                  }
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all
+                  ${reacted ? 'bg-emerald-500/20 text-emerald-400' : 'text-white/50 hover:bg-white/5 hover:text-white/70'}
                   ${loading === type ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
                 `}
                 title={label}
@@ -369,32 +366,27 @@ export default function PostCard({ post, currentUserId, isAdmin, onDeleted, onUp
               </button>
             )
           })}
-        </div>
 
-        {/* Repost button */}
-        {currentUserId && (
-          <div className="flex items-center gap-2">
+          {/* Repost */}
+          {currentUserId && (
             <button
               onClick={handleRepost}
               disabled={repostLoading}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all
-                ${
-                  repostedByMe
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                    : 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10 hover:text-white/70'
-                }
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs transition-all
+                ${repostedByMe ? 'text-emerald-400' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}
                 ${repostLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
               `}
-              title={repostedByMe ? 'Annuler le repost' : 'Repost'}
+              title={repostedByMe ? 'Annuler' : 'Repost'}
             >
-              <span>🔄</span>
-              <span>Repost</span>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
+              </svg>
               {repostsCount > 0 && <span>{repostsCount}</span>}
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Comments */}
+        {/* Comments collapsed */}
         <CommentSection postId={post.id} currentUserId={currentUserId} />
       </article>
 
