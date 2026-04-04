@@ -175,7 +175,7 @@ export default function ProfileContent({
       {/* ── Banner + avatar ────────────────────────────────────── */}
       <div className="relative">
         {/* Banner */}
-        <div className="h-48 relative overflow-hidden">
+        <div className="h-48 relative">
           {user.bannerUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -190,7 +190,7 @@ export default function ProfileContent({
 
         {/* Avatar — overlaps banner */}
         <div className="px-4">
-          <div className="flex items-end justify-between -mt-10">
+          <div className="flex items-end justify-between -mt-10 relative z-10">
             {/* Avatar */}
             <div className="flex-shrink-0">
               {user.avatar || user.image ? (
