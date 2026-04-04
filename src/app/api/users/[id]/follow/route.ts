@@ -100,7 +100,7 @@ export async function POST(
       following = true
 
       // Create FOLLOW notification
-      await upsertNotification({ userId: targetId, actorId: followerId, type: 'FOLLOW' })
+      await upsertNotification({ userId: targetId, actorId: currentUserId, type: 'FOLLOW' })
     }
 
     const followersCount = await prisma.follow.count({ where: { followingId: targetId } })
