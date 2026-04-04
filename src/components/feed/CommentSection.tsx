@@ -3,12 +3,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import ReportButton from './ReportButton'
+import VerifiedBadge from '@/components/VerifiedBadge'
 
 interface CommentAuthor {
   id: string
   name: string
   avatar?: string | null
   image?: string | null
+  verified?: boolean | null
 }
 
 interface Comment {
@@ -285,8 +287,9 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
               <Avatar author={comment.author} size="xs" />
               <div className="flex-1 min-w-0 bg-white/5 rounded-xl px-3 py-2">
                 <div className="flex items-baseline gap-2 mb-0.5">
-                  <span className="text-white/80 text-xs font-semibold">
-                    {comment.author.name}
+                  <span className="flex items-center gap-1">
+                    <span className="text-white/80 text-xs font-semibold">{comment.author.name}</span>
+                    {comment.author.verified && <VerifiedBadge className="w-3.5 h-3.5" />}
                   </span>
                   <span className="text-white/30 text-[10px]">{formatDate(comment.createdAt)}</span>
                   <div className="ml-auto">

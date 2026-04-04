@@ -15,7 +15,7 @@ export async function GET(
       orderBy: { createdAt: 'asc' },
       include: {
         user: {
-          select: { id: true, name: true, avatar: true, image: true },
+          select: { id: true, name: true, avatar: true, image: true, username: true, verified: true },
         },
       },
     })
@@ -75,7 +75,7 @@ export async function POST(
       },
       include: {
         user: {
-          select: { id: true, name: true, avatar: true, image: true },
+          select: { id: true, name: true, avatar: true, image: true, username: true, verified: true },
         },
       },
     })
