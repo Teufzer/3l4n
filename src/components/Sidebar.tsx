@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useState, useEffect } from 'react'
 import VerifiedBadge from '@/components/VerifiedBadge'
 
 const navItems = [
@@ -34,6 +35,20 @@ export default function Sidebar() {
   const router = useRouter()
   const { data: session } = useSession()
   const user = session?.user as { id?: string; name?: string; image?: string; username?: string } | undefined
+
+  const [notifCount, setNotifCount] = useState(0)
+
+  useEffect(() => {
+    const fetchCount = () => {
+      fetch('/api/notifications/count')
+        .then(r => r.json())
+        .then(d => setNotifCount(d.count ?? 0))
+        .catch(() => {})
+    }
+    fetchCount()
+    const interval = setInterval(fetchCount, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const profileHref = user?.username ? `/${user.username}` : user?.id ? `/profile/${user.id}` : '/login'
 
@@ -101,6 +116,11 @@ export default function Sidebar() {
             >
               <span className={active ? 'text-white' : ''}>{item.icon}</span>
               <span>{item.label}</span>
+              {item.href === '/notifications' && notifCount > 0 && (
+                <span className="ml-auto bg-emerald-500 text-black text-xs font-black rounded-full w-5 h-5 flex items-center justify-center shrink-0">
+                  {notifCount > 99 ? '99+' : notifCount}
+                </span>
+              )}
             </Link>
           )
         })}

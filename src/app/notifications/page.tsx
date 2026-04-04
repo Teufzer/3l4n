@@ -197,7 +197,13 @@ function NotifCard({
     )
   }
 
-  return <div onClick={handleClick}>{inner}</div>
+  // Pour FOLLOW ou autres sans post → rediriger vers le profil de l'acteur
+  const actorHref = notif.actor.username ? `/${notif.actor.username}` : `/profile/${notif.actorId}`
+  return (
+    <Link key={notif.id} href={actorHref} onClick={handleClick} className="block">
+      {inner}
+    </Link>
+  )
 }
 
 export default function NotificationsPage() {
