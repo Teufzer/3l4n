@@ -25,6 +25,7 @@ export default function WeightForm({ onSuccess }: WeightFormProps) {
     const w = parseFloat(weight)
     if (isNaN(w) || w <= 0) {
       setError('Entre un poids valide.')
+      toast.error('Entre un poids valide.')
       return
     }
 
@@ -38,7 +39,9 @@ export default function WeightForm({ onSuccess }: WeightFormProps) {
 
       if (!res.ok) {
         const data = await res.json()
-        setError(data.error ?? 'Erreur lors de l\'enregistrement.')
+        const msg = data.error ?? 'Erreur lors de l\'enregistrement.'
+        setError(msg)
+        toast.error(msg)
         return
       }
 
@@ -51,7 +54,9 @@ export default function WeightForm({ onSuccess }: WeightFormProps) {
 
       setTimeout(() => setSuccess(false), 3000)
     } catch {
-      setError('Erreur réseau. Réessaie.')
+      const msg = 'Erreur réseau. Réessaie.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
