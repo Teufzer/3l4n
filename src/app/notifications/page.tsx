@@ -13,7 +13,7 @@ interface NotifActor {
 
 interface Notification {
   id: string
-  type: 'MENTION' | 'REACTION' | 'COMMENT'
+  type: 'MENTION' | 'REACTION' | 'COMMENT' | 'FOLLOW'
   read: boolean
   createdAt: string
   actorId: string
@@ -22,7 +22,7 @@ interface Notification {
   post: { id: string; content: string } | null
 }
 
-type Tab = 'all' | 'mentions' | 'reactions' | 'comments'
+type Tab = 'all' | 'mentions' | 'reactions' | 'comments' | 'follows'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'all', label: 'Tout' },
@@ -57,11 +57,17 @@ function notifText(notif: Notification): { prefix: string; highlight?: string; s
       return { prefix: actor, highlight: ' a réagi', suffix: ' à ton post avec 🔥' }
     case 'COMMENT':
       return { prefix: actor, highlight: ' a commenté', suffix: ' ton post' }
+    case 'FOLLOW':
+      return { prefix: actor, highlight: ' a commencé', suffix: ' à te suivre' }
+    default:
+      return { prefix: actor, highlight: '', suffix: '' }
   }
 }
 
 function notifIcon(type: Notification['type']) {
   switch (type) {
+    case 'FOLLOW':
+      return <span className="flex items-center justify-center w-5 h-5 rounded-full bg-purple-500/20 text-purple-400 text-xs">👤</span>
     case 'MENTION':
       return (
         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold">
