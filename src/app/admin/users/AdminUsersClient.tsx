@@ -1,4 +1,5 @@
 'use client'
+import VerifiedBadge from '@/components/VerifiedBadge'
 
 import { useState } from 'react'
 
@@ -10,6 +11,7 @@ interface UserItem {
   image: string | null
   role: 'USER' | 'ADMIN'
   banned: boolean
+  verified: boolean
   createdAt: string | Date
   _count: { posts: number; comments: number }
 }
@@ -75,6 +77,18 @@ export default function AdminUsersClient({ initialUsers }: Props) {
     } finally {
       setLoading(null)
     }
+  }
+
+
+  const handleVerifyToggle = async (userId: string, verified: boolean) => {
+    await fetch(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verified }),
+    })
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, verified } : u))
+    )
   }
 
   const bannedCount = users.filter((u) => u.banned).length
@@ -175,6 +189,17 @@ export default function AdminUsersClient({ initialUsers }: Props) {
                         {loading === user.id ? '…' : user.banned ? 'Débannir' : 'Bannir'}
                       </button>
                     )}
+                    <button
+                      onClick={() => handleVerifyToggle(user.id, !user.verified)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${
+                        user.verified
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+                          : 'bg-white/5 text-white/40 border border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      <VerifiedBadge className="w-3.5 h-3.5" />
+                      {user.verified ? 'Certifié' : 'Certifier'}
+                    </button>
                   </td>
                 </tr>
               )

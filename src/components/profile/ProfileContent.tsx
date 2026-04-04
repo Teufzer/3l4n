@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import VerifiedBadge from '@/components/VerifiedBadge'
 import { Session } from 'next-auth'
 import WeightChart, { WeightDataPoint } from '@/components/weight/WeightChart'
 import WeightStats from '@/components/weight/WeightStats'
@@ -224,8 +225,9 @@ export default function ProfileContent({
 
           {/* Profile info */}
           <div className="mt-3 space-y-1">
-            <h1 className="text-white font-bold text-xl leading-tight">
+            <h1 className="text-white font-bold text-xl leading-tight flex items-center gap-2">
               {user.name || 'Utilisateur'}
+              {(user as {verified?: boolean}).verified && <VerifiedBadge className="w-5 h-5" />}
             </h1>
             {user.username && (
               <p className="text-zinc-500 text-sm">@{user.username}</p>

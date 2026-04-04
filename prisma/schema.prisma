@@ -31,6 +31,7 @@ model User {
   updatedAt            DateTime       @updatedAt
   role                 Role           @default(USER)
   banned               Boolean        @default(false)
+  verified             Boolean        @default(false)
   accounts             Account[]
   sessions             Session[]
   weightEntries        WeightEntry[]

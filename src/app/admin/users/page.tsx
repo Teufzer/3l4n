@@ -12,6 +12,7 @@ export default async function AdminUsersPage() {
       image: true,
       role: true,
       banned: true,
+      verified: true,
       createdAt: true,
       _count: {
         select: { posts: true, comments: true },

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { parseMentions } from '@/lib/parseMentions'
+import VerifiedBadge from '@/components/VerifiedBadge'
 import CommentSection from './CommentSection'
 import ReportButton from './ReportButton'
 
@@ -200,7 +201,10 @@ export default function PostCard({ post, currentUserId, onDeleted, onUpdated }: 
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-white font-semibold text-sm truncate">{post.author.name}</p>
+            <span className="flex items-center gap-1">
+              <p className="text-white font-semibold text-sm truncate">{post.author.name}</p>
+              {(post.author as { verified?: boolean }).verified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
+            </span>
             <Link
               href={`/post/${post.id}`}
               className="text-white/40 text-xs hover:text-emerald-400 transition-colors"
