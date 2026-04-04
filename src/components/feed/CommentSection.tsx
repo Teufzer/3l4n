@@ -56,7 +56,7 @@ function formatDate(iso: string) {
 
 function Avatar({ author, size = 'sm' }: { author: CommentAuthor; size?: 'sm' | 'xs' }) {
   const dim = size === 'xs' ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-xs'
-  const photoUrl = author.image || author.avatar
+  const photoUrl = author.avatar || author.image
 
   if (photoUrl) {
     return (
