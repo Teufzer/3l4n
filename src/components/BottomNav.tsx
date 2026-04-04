@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 interface BottomNavProps {
   profileHref?: string
@@ -130,12 +131,42 @@ const getNavItems = (profileHref: string, unreadCount: number) => [
 
 export default function BottomNav({ profileHref = '/profile', unreadCount = 0 }: BottomNavProps) {
   const pathname = usePathname()
+  const [liveCount, setLiveCount] = useState(unreadCount)
+
+  // Poll notification count every 30 seconds
+  useEffect(() => {
+    setLiveCount(unreadCount)
+  }, [unreadCount])
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/notifications/count')
+        if (res.ok) {
+          const data = await res.json()
+          setLiveCount(data.count ?? 0)
+        }
+      } catch {
+        // ignore network errors
+      }
+    }
+
+    const interval = setInterval(poll, 30_000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Reset count to 0 when user visits notifications page
+  useEffect(() => {
+    if (pathname === '/notifications') {
+      setLiveCount(0)
+    }
+  }, [pathname])
 
   // Hide on public pages
   const publicPaths = ['/', '/login', '/register']
   if (publicPaths.includes(pathname)) return null
 
-  const navItems = getNavItems(profileHref, unreadCount)
+  const navItems = getNavItems(profileHref, liveCount)
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#0f0f0f]/95 backdrop-blur-md border-t border-white/5">

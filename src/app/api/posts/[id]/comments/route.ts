@@ -61,9 +61,11 @@ export async function POST(
       return NextResponse.json({ error: 'Le commentaire ne doit pas dépasser 300 caractères' }, { status: 400 })
     }
 
+    const trimmedContent = content.trim()
+
     const comment = await prisma.comment.create({
       data: {
-        content: content.trim(),
+        content: trimmedContent,
         userId: session.user.id,
         postId,
       },
@@ -85,6 +87,33 @@ export async function POST(
           commentId: comment.id,
         },
       })
+    }
+
+    // Detect @mentions and create MENTION notifications
+    const mentionMatches = trimmedContent.match(/@([\w]+)/g)
+    if (mentionMatches && mentionMatches.length > 0) {
+      const usernames = [...new Set(mentionMatches.map((m) => m.slice(1).toLowerCase()))]
+      const mentionedUsers = await prisma.user.findMany({
+        where: {
+          username: { in: usernames },
+          id: { not: session.user.id }, // don't notify self
+        },
+        select: { id: true },
+      })
+
+      for (const mentionedUser of mentionedUsers) {
+        // Don't double-notify the post author who already got a COMMENT notif
+        if (mentionedUser.id === post.userId) continue
+        await prisma.notification.create({
+          data: {
+            type: 'MENTION',
+            userId: mentionedUser.id,
+            actorId: session.user.id,
+            postId,
+            commentId: comment.id,
+          },
+        })
+      }
     }
 
     const { user, ...rest } = comment
