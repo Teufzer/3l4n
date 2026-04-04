@@ -19,11 +19,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const updateData: Record<string, unknown> = {}
   if (body.banned !== undefined) updateData.banned = body.banned
   if (body.verified !== undefined) updateData.verified = body.verified
+  if ('startWeight' in body) updateData.startWeight = body.startWeight
 
   const user = await prisma.user.update({
     where: { id },
     data: updateData,
-    select: { id: true, name: true, banned: true, verified: true },
+    select: { id: true, name: true, banned: true, verified: true, startWeight: true },
   })
 
   return NextResponse.json({ user })
