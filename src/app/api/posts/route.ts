@@ -124,41 +124,7 @@ export async function GET(req: NextRequest) {
         : {}),
     }
 
-    // If viewing general feed as authenticated user with follows, fetch more to reorder
-    if (currentUserId && !userId && followedUserIds.length > 0) {
-      // Fetch a larger set and sort: followed users first, then by date desc
-      const fetchLimit = Math.min(limit * 5, 200)
-      const allPosts = await prisma.post.findMany({
-        skip,
-        take: fetchLimit,
-        orderBy: { createdAt: 'desc' },
-        where: whereClause,
-        include: {
-          user: {
-            select: { id: true, name: true, username: true, avatar: true, image: true, verified: true, banned: true },
-          },
-          reactions: {
-            select: { id: true, type: true, userId: true },
-          },
-          reposts: {
-            select: { userId: true },
-          },
-        },
-      })
-
-      const followedSet = new Set(followedUserIds)
-      const followed = allPosts.filter((p) => followedSet.has(p.userId))
-      const others = allPosts.filter((p) => !followedSet.has(p.userId))
-      const sorted = [...followed, ...others].slice(0, limit)
-
-      const normalized = sorted.map(({ user, reposts, ...rest }) => ({
-        ...rest,
-        author: user,
-        repostsCount: reposts.length,
-        repostedByMe: currentUserId ? reposts.some((r) => r.userId === currentUserId) : false,
-      }))
-      return NextResponse.json({ posts: normalized, page, limit })
-    }
+    // Feed purement chronologique — pas de tri par follows, juste date desc
 
     const posts = await prisma.post.findMany({
       skip,
