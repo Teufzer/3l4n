@@ -82,6 +82,34 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // Detect @mentions and create MENTION notifications
+    const mentionRegex = /@(\w+)/g
+    const mentionedUsernames = [...new Set(
+      [...content.matchAll(mentionRegex)].map((m) => m[1].toLowerCase())
+    )]
+
+    if (mentionedUsernames.length > 0) {
+      const mentionedUsers = await prisma.user.findMany({
+        where: {
+          username: { in: mentionedUsernames, mode: 'insensitive' },
+          NOT: { id: session.user.id },
+        },
+        select: { id: true },
+      })
+
+      if (mentionedUsers.length > 0) {
+        await prisma.notification.createMany({
+          data: mentionedUsers.map((u) => ({
+            type: 'MENTION' as const,
+            userId: u.id,
+            actorId: session.user.id,
+            postId: post.id,
+          })),
+          skipDuplicates: true,
+        })
+      }
+    }
+
     const { user, ...rest } = post
     return NextResponse.json({ post: { ...rest, author: user } }, { status: 201 })
   } catch (error) {

@@ -74,6 +74,19 @@ export async function POST(
       },
     })
 
+    // Create COMMENT notification for the post author (not self)
+    if (post.userId !== session.user.id) {
+      await prisma.notification.create({
+        data: {
+          type: 'COMMENT',
+          userId: post.userId,
+          actorId: session.user.id,
+          postId,
+          commentId: comment.id,
+        },
+      })
+    }
+
     const { user, ...rest } = comment
     return NextResponse.json({ comment: { ...rest, author: user } }, { status: 201 })
   } catch (error) {

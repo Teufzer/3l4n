@@ -48,6 +48,18 @@ export async function POST(
       await prisma.reaction.create({
         data: { type: type as ReactionType, postId, userId },
       })
+
+      // Create REACTION notification for the post author (not self)
+      if (post.userId !== userId) {
+        await prisma.notification.create({
+          data: {
+            type: 'REACTION',
+            userId: post.userId,
+            actorId: userId,
+            postId,
+          },
+        })
+      }
     }
 
     // Return updated reactions for this post

@@ -15,28 +15,30 @@ enum Role {
 }
 
 model User {
-  id            String        @id @default(cuid())
-  email         String        @unique
-  username      String?       @unique
-  name          String?
-  avatar        String?
-  bio           String?
-  targetWeight  Float?
-  startWeight   Float?
-  password      String?
-  emailVerified DateTime?
-  image         String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  role          Role          @default(USER)
-  banned        Boolean       @default(false)
-  accounts      Account[]
-  sessions      Session[]
-  weightEntries WeightEntry[]
-  posts         Post[]
-  reactions     Reaction[]
-  comments      Comment[]
-  reports       Report[]
+  id                   String         @id @default(cuid())
+  email                String         @unique
+  username             String?        @unique
+  name                 String?
+  avatar               String?
+  bio                  String?
+  targetWeight         Float?
+  startWeight          Float?
+  password             String?
+  emailVerified        DateTime?
+  image                String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  role                 Role           @default(USER)
+  banned               Boolean        @default(false)
+  accounts             Account[]
+  sessions             Session[]
+  weightEntries        WeightEntry[]
+  posts                Post[]
+  reactions            Reaction[]
+  comments             Comment[]
+  reports              Report[]
+  notificationsAsUser  Notification[] @relation("NotifUser")
+  notificationsAsActor Notification[] @relation("NotifActor")
 }
 
 model Account {
@@ -98,17 +100,19 @@ model Post {
   reactions       Reaction[]
   comments        Comment[]
   reports         Report[]
+  notifications   Notification[]
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  content   String
-  createdAt DateTime @default(now())
-  userId    String
-  postId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  reports   Report[]
+  id            String         @id @default(cuid())
+  content       String
+  createdAt     DateTime       @default(now())
+  userId        String
+  postId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post          Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reports       Report[]
+  notifications Notification[]
 }
 
 model Report {
@@ -134,6 +138,27 @@ model Reaction {
   createdAt DateTime     @default(now())
 
   @@unique([postId, userId, type])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  type      NotifType
+  read      Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  userId    String
+  actorId   String
+  postId    String?
+  commentId String?
+  user      User      @relation("NotifUser", fields: [userId], references: [id], onDelete: Cascade)
+  actor     User      @relation("NotifActor", fields: [actorId], references: [id], onDelete: Cascade)
+  post      Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment   Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+}
+
+enum NotifType {
+  MENTION
+  REACTION
+  COMMENT
 }
 
 enum ReactionType {

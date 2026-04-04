@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
 
 interface PostFormProps {
@@ -8,6 +8,14 @@ interface PostFormProps {
   userName?: string
   userImage?: string
   r2Enabled?: boolean
+}
+
+interface UserSuggestion {
+  id: string
+  username: string | null
+  name: string | null
+  avatar: string | null
+  image: string | null
 }
 
 function getInitials(name: string) {
@@ -33,9 +41,95 @@ export default function PostForm({ onPostCreated, userName = 'Moi', userImage, r
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
 
+  // Mention autocomplete state
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
+  const [mentionSuggestions, setMentionSuggestions] = useState<UserSuggestion[]>([])
+  const [mentionIndex, setMentionIndex] = useState(0)
+  const [mentionCursorPos, setMentionCursorPos] = useState(0)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const mentionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const MAX_CHARS = 500
+
+  // Fetch mention suggestions
+  useEffect(() => {
+    if (mentionQuery === null) {
+      setMentionSuggestions([])
+      return
+    }
+    if (mentionDebounceRef.current) clearTimeout(mentionDebounceRef.current)
+    mentionDebounceRef.current = setTimeout(async () => {
+      if (!mentionQuery) {
+        setMentionSuggestions([])
+        return
+      }
+      try {
+        const res = await fetch(`/api/users/search?q=${encodeURIComponent(mentionQuery)}`)
+        if (res.ok) {
+          const data = await res.json()
+          setMentionSuggestions(data.users ?? [])
+          setMentionIndex(0)
+        }
+      } catch {
+        // ignore
+      }
+    }, 200)
+    return () => {
+      if (mentionDebounceRef.current) clearTimeout(mentionDebounceRef.current)
+    }
+  }, [mentionQuery])
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value
+    setContent(val)
+
+    const cursor = e.target.selectionStart ?? val.length
+    const textBeforeCursor = val.slice(0, cursor)
+    const match = textBeforeCursor.match(/@(\w*)$/)
+    if (match) {
+      setMentionQuery(match[1])
+      setMentionCursorPos(cursor - match[0].length)
+    } else {
+      setMentionQuery(null)
+      setMentionSuggestions([])
+    }
+  }
+
+  const insertMention = (user: UserSuggestion) => {
+    const username = user.username ?? ''
+    const before = content.slice(0, mentionCursorPos)
+    const after = content.slice(mentionCursorPos).replace(/^@\w*/, '')
+    const newContent = before + `@${username} ` + after
+    setContent(newContent)
+    setMentionQuery(null)
+    setMentionSuggestions([])
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const pos = (before + `@${username} `).length
+        textareaRef.current.focus()
+        textareaRef.current.setSelectionRange(pos, pos)
+      }
+    }, 0)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!mentionSuggestions.length) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setMentionIndex((i) => Math.min(i + 1, mentionSuggestions.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setMentionIndex((i) => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault()
+      insertMention(mentionSuggestions[mentionIndex])
+    } else if (e.key === 'Escape') {
+      setMentionQuery(null)
+      setMentionSuggestions([])
+    }
+  }
 
   const handleFileSelect = useCallback(async (file: File) => {
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -47,13 +141,11 @@ export default function PostForm({ onPostCreated, userName = 'Moi', userImage, r
       return
     }
 
-    // Show local preview immediately
     const localUrl = URL.createObjectURL(file)
     setSelectedFile(file)
     setPreviewUrl(localUrl)
     setUploadedImageUrl(null)
 
-    // Upload via notre serveur (évite les problèmes CORS)
     setUploading(true)
     try {
       const formData = new FormData()
@@ -73,7 +165,6 @@ export default function PostForm({ onPostCreated, userName = 'Moi', userImage, r
       setUploadedImageUrl(publicUrl)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erreur lors de l'upload")
-      // Clear the photo if upload failed
       setSelectedFile(null)
       setPreviewUrl(null)
       URL.revokeObjectURL(localUrl)
@@ -89,7 +180,6 @@ export default function PostForm({ onPostCreated, userName = 'Moi', userImage, r
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) handleFileSelect(file)
-    // Reset input so same file can be re-selected
     e.target.value = ''
   }
 
@@ -105,9 +195,8 @@ export default function PostForm({ onPostCreated, userName = 'Moi', userImage, r
     const trimmed = content.trim()
     if (!trimmed || loading) return
 
-    // Don't submit while photo is still uploading
     if (uploading) {
-      toast.error("La photo est encore en cours d'envoi, patiente un instant…")
+      toast.error("La photo est encore en cours d'envoi, patiente un instant...")
       return
     }
 
@@ -132,7 +221,7 @@ export default function PostForm({ onPostCreated, userName = 'Moi', userImage, r
       setContent('')
       handleRemovePhoto()
       onPostCreated?.()
-      toast.success('Post publié ! 💪')
+      toast.success('Post publie ! 💪')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue')
       toast.error(err instanceof Error ? err.message : 'Erreur inconnue')
@@ -151,7 +240,6 @@ export default function PostForm({ onPostCreated, userName = 'Moi', userImage, r
       className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-4 space-y-3"
     >
       <div className="flex items-start gap-3">
-        {/* Avatar */}
         {userImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={userImage} alt="avatar" className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/30 flex-shrink-0 mt-0.5" />
@@ -161,23 +249,65 @@ export default function PostForm({ onPostCreated, userName = 'Moi', userImage, r
           </div>
         )}
 
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder="Partage ta progression, tes ressentis… La communauté est là 💚"
-          maxLength={MAX_CHARS + 50}
-          rows={3}
-          className="flex-1 bg-transparent text-white/80 placeholder:text-white/30 text-sm resize-none outline-none leading-relaxed"
-          disabled={loading}
-        />
+        <div className="flex-1 relative">
+          <textarea
+            ref={textareaRef}
+            value={content}
+            onChange={handleContentChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Partage ta progression, tes ressentis... La communaute est la 💚"
+            maxLength={MAX_CHARS + 50}
+            rows={3}
+            className="w-full bg-transparent text-white/80 placeholder:text-white/30 text-sm resize-none outline-none leading-relaxed"
+            disabled={loading}
+          />
+
+          {mentionSuggestions.length > 0 && (
+            <div className="absolute left-0 top-full mt-1 z-50 bg-[#1e1e1e] border border-white/10 rounded-xl shadow-xl overflow-hidden w-56">
+              {mentionSuggestions.map((user, i) => (
+                <button
+                  key={user.id}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    insertMention(user)
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${
+                    i === mentionIndex
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'text-white/70 hover:bg-white/5'
+                  }`}
+                >
+                  {user.avatar || user.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={user.avatar ?? user.image ?? ''}
+                      alt=""
+                      className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                      {(user.name ?? user.username ?? '?')[0].toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold truncate">@{user.username}</div>
+                    {user.name && (
+                      <div className="text-[10px] text-white/40 truncate">{user.name}</div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Photo preview */}
       {previewUrl && (
         <div className="relative inline-block ml-13">
           <img
             src={previewUrl}
-            alt="Aperçu de la photo"
+            alt="Apercu de la photo"
             className="max-h-32 max-w-xs rounded-xl border border-white/10 object-cover"
           />
           {uploading && (
@@ -207,7 +337,6 @@ export default function PostForm({ onPostCreated, userName = 'Moi', userImage, r
 
       <div className="flex items-center justify-between pt-1 border-t border-white/5">
         <div className="flex items-center gap-3">
-          {/* Photo button — hidden if R2 not configured */}
           {r2Enabled && (
             <>
               <input
@@ -240,7 +369,7 @@ export default function PostForm({ onPostCreated, userName = 'Moi', userImage, r
                 : 'text-white/30'
             }`}
           >
-            {remaining} caractères
+            {remaining} caracteres
           </span>
         </div>
 
@@ -257,7 +386,7 @@ export default function PostForm({ onPostCreated, userName = 'Moi', userImage, r
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
-              Publication…
+              Publication...
             </span>
           ) : (
             'Publier'

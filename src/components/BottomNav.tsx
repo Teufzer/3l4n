@@ -5,12 +5,14 @@ import { usePathname } from 'next/navigation'
 
 interface BottomNavProps {
   profileHref?: string
+  unreadCount?: number
 }
 
-const getNavItems = (profileHref: string) => [
+const getNavItems = (profileHref: string, unreadCount: number) => [
   {
     href: '/dashboard',
     label: 'Accueil',
+    badge: 0,
     icon: (active: boolean) => (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -32,6 +34,7 @@ const getNavItems = (profileHref: string) => [
   {
     href: '/feed',
     label: 'Feed',
+    badge: 0,
     icon: (active: boolean) => (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -51,8 +54,31 @@ const getNavItems = (profileHref: string) => [
     ),
   },
   {
+    href: '/notifications',
+    label: 'Notifs',
+    badge: unreadCount,
+    icon: (active: boolean) => (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className={`w-6 h-6 transition-all ${active ? 'scale-110' : ''}`}
+        viewBox="0 0 24 24"
+        fill={active ? 'currentColor' : 'none'}
+        stroke="currentColor"
+        strokeWidth={active ? 0 : 1.8}
+        aria-hidden="true"
+      >
+        {active ? (
+          <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        )}
+      </svg>
+    ),
+  },
+  {
     href: profileHref,
     label: 'Profil',
+    badge: 0,
     icon: (active: boolean) => (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -74,6 +100,7 @@ const getNavItems = (profileHref: string) => [
   {
     href: '/settings',
     label: 'Paramètres',
+    badge: 0,
     icon: (active: boolean) => (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -101,14 +128,14 @@ const getNavItems = (profileHref: string) => [
   },
 ]
 
-export default function BottomNav({ profileHref = '/profile' }: BottomNavProps) {
+export default function BottomNav({ profileHref = '/profile', unreadCount = 0 }: BottomNavProps) {
   const pathname = usePathname()
 
   // Hide on public pages
   const publicPaths = ['/', '/login', '/register']
   if (publicPaths.includes(pathname)) return null
 
-  const navItems = getNavItems(profileHref)
+  const navItems = getNavItems(profileHref, unreadCount)
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#0f0f0f]/95 backdrop-blur-md border-t border-white/5">
@@ -116,25 +143,32 @@ export default function BottomNav({ profileHref = '/profile' }: BottomNavProps) 
         className="max-w-xl mx-auto flex items-center justify-around h-16 px-2"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        {navItems.map(({ href, label, icon }) => {
+        {navItems.map(({ href, label, icon, badge }) => {
           const isProfileActive = label === 'Profil' && (
             pathname.startsWith('/profile') || pathname === href
           )
           const active = label === 'Profil'
             ? isProfileActive
-            : pathname === href || (href !== '/dashboard' && href !== '/settings' && pathname.startsWith(href))
+            : pathname === href || (href !== '/dashboard' && href !== '/settings' && href !== '/notifications' && pathname.startsWith(href))
 
           return (
             <Link
               key={href}
               href={href}
-              className={`relative flex flex-col items-center justify-center gap-1 px-5 py-2 rounded-2xl transition-all duration-200
+              className={`relative flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-2xl transition-all duration-200
                 ${active
                   ? 'text-emerald-400'
                   : 'text-white/35 hover:text-white/60 active:scale-95'
                 }`}
             >
-              {icon(active)}
+              <span className="relative inline-flex">
+                {icon(active)}
+                {badge > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                    {badge > 99 ? '99+' : badge}
+                  </span>
+                )}
+              </span>
               <span className={`text-[10px] font-medium tracking-wide leading-none transition-colors ${active ? 'text-emerald-400' : 'text-white/35'}`}>
                 {label}
               </span>
