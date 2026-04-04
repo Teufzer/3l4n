@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
+import { toast } from 'sonner'
 import CommentSection from './CommentSection'
 import ReportButton from './ReportButton'
 
@@ -67,6 +69,16 @@ export default function PostCard({ post, currentUserId }: PostCardProps) {
   const hasReacted = (type: ReactionType) =>
     currentUserId ? reactions.some((r) => r.type === type && r.userId === currentUserId) : false
 
+  const handleShare = async () => {
+    const url = `https://3l4n.com/post/${post.id}`
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success('Lien copié !')
+    } catch {
+      toast.error('Impossible de copier le lien')
+    }
+  }
+
   const handleReact = async (type: ReactionType) => {
     if (!currentUserId || loading) return
     setLoading(type)
@@ -106,9 +118,23 @@ export default function PostCard({ post, currentUserId }: PostCardProps) {
           )}
           <div className="min-w-0 flex-1">
             <p className="text-white font-semibold text-sm truncate">{post.author.name}</p>
-            <p className="text-white/40 text-xs">{formatDate(post.createdAt)}</p>
+            <Link
+              href={`/post/${post.id}`}
+              className="text-white/40 text-xs hover:text-emerald-400 transition-colors"
+              title="Voir le post"
+            >
+              {formatDate(post.createdAt)}
+            </Link>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={handleShare}
+              className="p-1.5 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/5 transition-all"
+              aria-label="Partager ce post"
+              title="Copier le lien"
+            >
+              🔗
+            </button>
             <ReportButton postId={post.id} currentUserId={currentUserId} />
           </div>
         </div>
