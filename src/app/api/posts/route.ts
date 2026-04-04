@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { upsertNotification } from '@/lib/notifications'
 import { auth } from '@/auth'
 import { rateLimit } from '@/lib/rateLimit'
 
@@ -176,16 +177,8 @@ export async function POST(req: NextRequest) {
         select: { id: true },
       })
 
-      if (mentionedUsers.length > 0) {
-        await prisma.notification.createMany({
-          data: mentionedUsers.map((u) => ({
-            type: 'MENTION' as const,
-            userId: u.id,
-            actorId: session.user.id,
-            postId: post.id,
-          })),
-          skipDuplicates: true,
-        })
+      for (const u of mentionedUsers) {
+        await upsertNotification({ userId: u.id, actorId: session.user.id, type: 'MENTION', postId: post.id })
       }
     }
 

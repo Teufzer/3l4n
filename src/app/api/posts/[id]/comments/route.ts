@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { upsertNotification } from '@/lib/notifications'
 import { auth } from '@/auth'
 
 // GET /api/posts/[id]/comments
