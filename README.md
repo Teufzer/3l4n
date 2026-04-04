@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 3l4n — Suivi de poids communautaire
+
+Application mobile-first de suivi de poids avec feed social, objectifs personnalisés et statistiques de progression.
+
+## Stack
+
+- **Next.js 15** (App Router)
+- **Prisma** + PostgreSQL
+- **NextAuth v5** (credentials + Google OAuth)
+- **Tailwind CSS** (dark theme, emerald accent)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Base de données
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Appliquer le schéma (première fois ou après modifications)
 
-## Learn More
+```bash
+npx prisma db push
+```
 
-To learn more about Next.js, take a look at the following resources:
+> ⚠️ Cette commande applique les changements du schéma directement en base sans créer de fichier de migration. À utiliser en développement.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Générer le client Prisma
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npx prisma generate
+```
 
-## Deploy on Vercel
+### Variables d'environnement
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Copie `.env.example` vers `.env` et remplis les valeurs :
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```env
+DATABASE_URL="postgresql://..."
+NEXTAUTH_SECRET="..."
+NEXTAUTH_URL="http://localhost:3000"
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+```
+
+## Fonctionnalités
+
+### Suivi de poids
+- Enregistrement de pesées quotidiennes avec notes
+- Graphique de courbe de poids
+- Statistiques : poids actuel, évolution, streak, objectif
+
+### Objectif de poids
+- Définir un poids de départ (`startWeight`) et un objectif (`targetWeight`)
+- `GoalCard` : barre de progression avec % atteint
+- Badge motivant : 🔥 En feu (>50%), 💪 Continue (<50%), 🏆 Objectif atteint!
+
+### Page Paramètres (`/settings`)
+- Modifier nom, bio
+- Définir poids de départ et objectif de poids
+- Déconnexion
+
+### Feed social
+- Partage de posts
+- Réactions : COURAGE, EN_FEU, SOLIDAIRE
+
+## API
+
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| `GET` | `/api/user` | Profil utilisateur connecté |
+| `PATCH` | `/api/user` | Mise à jour nom, bio, targetWeight, startWeight |
+| `GET` | `/api/weight` | Entrées de poids |
+| `POST` | `/api/weight` | Ajouter une pesée |
+| `GET` | `/api/posts` | Posts du feed |
+| `POST` | `/api/posts` | Créer un post |
+| `POST` | `/api/posts/[id]/react` | Réagir à un post |
+
+## Modèle Prisma (User)
+
+```prisma
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  bio           String?
+  targetWeight  Float?   // Objectif de poids (kg)
+  startWeight   Float?   // Poids de départ (kg)
+  // ...
+}
+```
+
+> Après toute modification du schéma, lancer : `npx prisma db push`

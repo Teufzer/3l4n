@@ -97,7 +97,7 @@ export default function SettingsPage() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <Link
-            href={profile ? `/profile/${profile.id}` : '/'}
+            href={profile ? `/profile/${profile.id}` : '/dashboard'}
             className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition"
           >
             <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -112,13 +112,12 @@ export default function SettingsPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {/* Infos perso */}
+          {/* Infos personnelles */}
           <section className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
             <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider">
               Infos personnelles
             </h2>
 
-            {/* Nom */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="name" className="text-sm text-white/60 font-medium">
                 Nom
@@ -133,7 +132,6 @@ export default function SettingsPage() {
               />
             </div>
 
-            {/* Bio */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="bio" className="text-sm text-white/60 font-medium">
                 Bio
@@ -160,7 +158,6 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            {/* Poids de départ */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="startWeight" className="text-sm text-white/60 font-medium">
                 Poids de départ <span className="text-white/20">(kg)</span>
@@ -178,7 +175,6 @@ export default function SettingsPage() {
               />
             </div>
 
-            {/* Objectif de poids */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="targetWeight" className="text-sm text-white/60 font-medium">
                 Objectif de poids <span className="text-white/20">(kg)</span>
@@ -196,25 +192,28 @@ export default function SettingsPage() {
               />
             </div>
 
-            {/* Preview progression */}
-            {startWeight && targetWeight && parseFloat(startWeight) > 0 && parseFloat(targetWeight) > 0 && (
-              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 flex items-center gap-3">
-                <span className="text-lg">🎯</span>
-                <div>
-                  <p className="text-sm text-emerald-400 font-medium">
-                    {parseFloat(startWeight) > parseFloat(targetWeight)
-                      ? `Perdre ${(parseFloat(startWeight) - parseFloat(targetWeight)).toFixed(1)} kg`
-                      : `Prendre ${(parseFloat(targetWeight) - parseFloat(startWeight)).toFixed(1)} kg`}
-                  </p>
-                  <p className="text-xs text-white/30">
-                    {startWeight} kg → {targetWeight} kg
-                  </p>
+            {/* Preview */}
+            {startWeight &&
+              targetWeight &&
+              parseFloat(startWeight) > 0 &&
+              parseFloat(targetWeight) > 0 && (
+                <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 flex items-center gap-3">
+                  <span className="text-lg">🎯</span>
+                  <div>
+                    <p className="text-sm text-emerald-400 font-medium">
+                      {parseFloat(startWeight) > parseFloat(targetWeight)
+                        ? `Perdre ${(parseFloat(startWeight) - parseFloat(targetWeight)).toFixed(1)} kg`
+                        : `Prendre ${(parseFloat(targetWeight) - parseFloat(startWeight)).toFixed(1)} kg`}
+                    </p>
+                    <p className="text-xs text-white/30">
+                      {startWeight} kg → {targetWeight} kg
+                    </p>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </section>
 
-          {/* Error / Success */}
+          {/* Messages */}
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-sm text-red-400">
               {error}
@@ -226,7 +225,7 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {/* Save button */}
+          {/* Bouton sauvegarder */}
           <button
             type="submit"
             disabled={saving}
@@ -243,7 +242,7 @@ export default function SettingsPage() {
           </button>
         </form>
 
-        {/* Danger zone */}
+        {/* Compte / Déconnexion */}
         <section className="mt-6 bg-[#1a1a1a] border border-white/5 rounded-2xl p-5">
           <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-4">
             Compte
