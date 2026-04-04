@@ -34,14 +34,15 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-[#0f0f0f] text-white">
         <Providers>
-          <div className="flex min-h-screen">
-            {/* Sidebar gauche - desktop uniquement */}
+          {/* Layout Twitter : sidebar gauche fixe | contenu centré | sidebar droite fixe */}
+          <div className="min-h-screen">
+            {/* Sidebar gauche fixe */}
             <Sidebar />
 
-            {/* Contenu principal */}
-            <div className="flex-1 lg:ml-[275px] xl:ml-[320px] flex flex-col min-h-screen">
+            {/* Zone centrale + droite */}
+            <div className="lg:pl-[275px] xl:pl-[320px] xl:pr-[380px] flex flex-col min-h-screen">
               <main className="flex-1">
-                <div className="max-w-[680px] lg:border-r lg:border-white/5 min-h-screen">
+                <div className="w-full lg:border-x lg:border-white/5 min-h-screen">
                   {children}
                 </div>
               </main>
@@ -51,8 +52,8 @@ export default function RootLayout({
               </div>
             </div>
 
-            {/* Sidebar droite - xl uniquement */}
-            <div className="hidden xl:block w-[380px] shrink-0 px-6 py-4">
+            {/* Sidebar droite fixe - xl uniquement */}
+            <div className="hidden xl:block fixed right-0 top-0 w-[380px] h-full border-l border-white/5 px-6 py-4 overflow-y-auto">
               <RightSidebar />
             </div>
           </div>
