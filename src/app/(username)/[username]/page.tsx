@@ -1,21 +1,32 @@
 import { prisma } from '@/lib/prisma'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
+import { auth } from '@/auth'
+import ProfileContent from '@/components/profile/ProfileContent'
 
 interface Props {
   params: Promise<{ username: string }>
 }
 
-export default async function UsernameRedirectPage({ params }: Props) {
+export default async function UsernamePage({ params }: Props) {
   const { username } = await params
-  // Strip leading @ if present
   const clean = username.replace(/^@/, '').toLowerCase()
+
+  const session = await auth()
 
   const user = await prisma.user.findUnique({
     where: { username: clean },
-    select: { id: true },
+    include: {
+      weightEntries: { orderBy: { date: 'asc' } },
+      posts: {
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        include: { reactions: true },
+      },
+      _count: { select: { posts: true, weightEntries: true } },
+    },
   })
 
   if (!user) notFound()
 
-  redirect(`/profile/${user.id}`)
+  return <ProfileContent user={user} session={session} />
 }
