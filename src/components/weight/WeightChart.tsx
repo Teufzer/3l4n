@@ -91,7 +91,7 @@ export default function WeightChart({ data, goal }: WeightChartProps) {
       <ResponsiveContainer width="100%" height={220}>
         <AreaChart
           data={data}
-          margin={{ top: 8, right: 8, left: -20, bottom: 0 }}
+          margin={{ top: 8, right: 8, left: 8, bottom: 0 }}
         >
           <defs>
             <linearGradient id="emeraldGradient" x1="0" y1="0" x2="0" y2="1">
@@ -120,8 +120,8 @@ export default function WeightChart({ data, goal }: WeightChartProps) {
             tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11 }}
             axisLine={false}
             tickLine={false}
-            tickFormatter={(v: number) => `${v.toFixed(0)}`}
-            width={40}
+            tickFormatter={(v: number) => `${Math.round(v)}`}
+            width={45}
           />
 
           <Tooltip
