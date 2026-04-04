@@ -34,10 +34,7 @@ export default function Sidebar() {
     <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-full w-[275px] xl:w-[320px] border-r border-white/5 px-4 xl:px-6 py-4 z-40">
       {/* Logo */}
       <Link href="/feed" className="flex items-center gap-2 px-3 py-3 mb-2 group w-fit rounded-2xl hover:bg-white/5 transition">
-        <svg className="w-7 h-7 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13 17l5-5-5-5M6 17l5-5-5-5" />
-        </svg>
-        <span className="text-xl font-black text-white tracking-tight">
+        <span className="text-2xl font-black text-white tracking-tight">
           3l<span className="text-emerald-400">4</span>n
         </span>
       </Link>

@@ -13,6 +13,7 @@ interface UserProfile {
   targetWeight: number | null
   startWeight: number | null
   email: string
+  avatar: string | null
 }
 
 export default function SettingsPage() {
@@ -126,6 +127,23 @@ export default function SettingsPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {/* Photo de profil */}
+          <section className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
+            <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider">Photo de profil</h2>
+            <div className="flex items-center gap-4">
+              {profile && (
+                <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl font-bold overflow-hidden ring-2 ring-emerald-500/20">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {profile.avatar || profile.email ? <img src={`https://www.gravatar.com/avatar/${btoa(profile.email || '')}?d=identicon`} alt="" className="w-full h-full object-cover" /> : (profile.name || 'U')[0].toUpperCase()}
+                </div>
+              )}
+              <div className="text-sm text-white/40 leading-relaxed">
+                <p>Ta photo de profil vient de ton compte Google.</p>
+                <p>Pour la changer, modifie ta <a href="https://myaccount.google.com" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">photo Google</a> puis reconnecte-toi.</p>
+              </div>
+            </div>
+          </section>
+
           {/* Infos perso */}
           <section className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
             <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider">

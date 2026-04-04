@@ -153,7 +153,7 @@ export default function ProfileContent({
       {/* ── Sticky header ─────────────────────────────────────── */}
       <header className="sticky top-0 z-30 bg-[#0f0f0f]/90 backdrop-blur-sm border-b border-zinc-800/60 px-4 py-3 flex items-center gap-4">
         <button
-          onClick={() => window.history.back()}
+          onClick={() => { window.location.href = '/feed' }}
           className="p-1.5 rounded-full hover:bg-zinc-800 transition-colors text-white"
           aria-label="Retour"
         >
