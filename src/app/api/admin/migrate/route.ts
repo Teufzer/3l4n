@@ -6,25 +6,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const results: string[] = []
-  const run = async (sql: string) => {
-    try { await prisma.$executeRawUnsafe(sql); results.push('OK: ' + sql.slice(0, 60)) }
-    catch (e: unknown) { results.push('SKIP: ' + String(e).slice(0, 80)) }
+  const run = async (sql: string, label: string) => {
+    try { await prisma.$executeRawUnsafe(sql); results.push('OK: ' + label) }
+    catch (e: unknown) { results.push('SKIP: ' + label + ' — ' + String(e).slice(0, 60)) }
   }
 
-  await run(`ALTER TABLE "Post" ADD COLUMN IF NOT EXISTS "editedAt" TIMESTAMP;`)
-  await run(`ALTER TABLE "Post" ADD COLUMN IF NOT EXISTS "originalContent" TEXT;`)
-  await run(`CREATE TYPE IF NOT EXISTS "NotifType" AS ENUM ('MENTION', 'REACTION', 'COMMENT');`)
-  await run(`CREATE TABLE IF NOT EXISTS "Notification" (
+  // Follow table
+  await run(`CREATE TABLE IF NOT EXISTS "Follow" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "type" "NotifType" NOT NULL,
-    "read" BOOLEAN NOT NULL DEFAULT false,
+    "followerId" TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+    "followingId" TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
     "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
-    "userId" TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
-    "actorId" TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
-    "postId" TEXT REFERENCES "Post"("id") ON DELETE CASCADE,
-    "commentId" TEXT REFERENCES "Comment"("id") ON DELETE CASCADE
-  );`)
-  await run(`CREATE INDEX IF NOT EXISTS "Notification_userId_idx" ON "Notification"("userId");`)
+    UNIQUE("followerId", "followingId")
+  )`, 'Follow table')
+
+  // Block table
+  await run(`CREATE TABLE IF NOT EXISTS "Block" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "blockerId" TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+    "blockedId" TEXT NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
+    UNIQUE("blockerId", "blockedId")
+  )`, 'Block table')
+
+  // Add FOLLOW to NotifType enum
+  await run(`ALTER TYPE "NotifType" ADD VALUE IF NOT EXISTS 'FOLLOW'`, 'NotifType FOLLOW')
+
+  // verified column
+  await run(`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "verified" BOOLEAN NOT NULL DEFAULT false`, 'User.verified')
 
   return NextResponse.json({ ok: true, results })
 }
