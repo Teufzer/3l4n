@@ -34,28 +34,36 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-[#0f0f0f] text-white">
         <Providers>
-          {/* Layout Twitter : sidebar gauche fixe | contenu centré | sidebar droite fixe */}
-          <div className="min-h-screen">
-            {/* Sidebar gauche fixe */}
-            <Sidebar />
+          {/* Layout centré style Twitter */}
+          <div className="min-h-screen flex justify-center">
+            {/* Wrapper max-width centré */}
+            <div className="w-full max-w-[1280px] flex relative">
 
-            {/* Zone centrale + droite */}
-            <div className="lg:pl-[275px] xl:pl-[320px] xl:pr-[380px] flex flex-col min-h-screen">
-              <main className="flex-1">
-                <div className="w-full lg:border-x lg:border-white/5 min-h-screen">
-                  {children}
+              {/* Sidebar gauche */}
+              <div className="hidden lg:flex flex-col w-[275px] xl:w-[320px] shrink-0">
+                <div className="fixed top-0 h-full w-[275px] xl:w-[320px] flex flex-col">
+                  <Sidebar />
                 </div>
-              </main>
-              {/* Bottom nav - mobile uniquement */}
-              <div className="lg:hidden">
-                <BottomNavWrapper />
               </div>
-            </div>
 
-            {/* Sidebar droite fixe - xl uniquement */}
-            <div className="hidden xl:block fixed right-0 top-0 w-[380px] h-full border-l border-white/5 px-6 py-4 overflow-y-auto">
-              <RightSidebar />
+              {/* Contenu principal centré */}
+              <main className="flex-1 min-w-0 border-x border-white/5 min-h-screen">
+                {children}
+              </main>
+
+              {/* Sidebar droite */}
+              <div className="hidden xl:flex flex-col w-[380px] shrink-0">
+                <div className="fixed top-0 w-[380px] h-full overflow-y-auto px-6 py-4">
+                  <RightSidebar />
+                </div>
+              </div>
+
             </div>
+          </div>
+
+          {/* Bottom nav mobile */}
+          <div className="lg:hidden">
+            <BottomNavWrapper />
           </div>
         </Providers>
         <Toaster

@@ -31,7 +31,7 @@ export default function Sidebar() {
   const profileHref = user?.username ? `/${user.username}` : user?.id ? `/profile/${user.id}` : '/login'
 
   return (
-    <aside className="hidden lg:flex flex-col fixed left-0 top-0 h-full w-[275px] xl:w-[320px] border-r border-white/5 px-4 xl:px-6 py-4 z-40">
+    <aside className="flex flex-col h-full w-full px-4 xl:px-6 py-4">
       {/* Logo */}
       <Link href="/feed" className="flex items-center gap-2 px-3 py-3 mb-2 group w-fit rounded-2xl hover:bg-white/5 transition">
         <span className="text-2xl font-black text-white tracking-tight">
