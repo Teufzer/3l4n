@@ -65,11 +65,9 @@ export default async function DashboardPage() {
 
           {/* Welcome */}
           <div>
-            <p className="text-zinc-400 text-sm">Bienvenue,</p>
-            <h2 className="text-xl font-semibold text-white mt-0.5">
-              {session.user.name || session.user.email} 👋
+            <h2 className="text-xl font-semibold text-white">
+              Bonjour {session.user.name || session.user.email} 👋
             </h2>
-
           </div>
 
           {/* Dashboard client (stats + chart + form) */}
@@ -89,7 +87,7 @@ export default async function DashboardPage() {
                 <p className="text-zinc-500 text-xs">Vois ce que la communauté partage</p>
               </div>
             </div>
-            <span className="text-zinc-600 group-hover:text-emerald-500 transition">→</span>
+            <span className="text-zinc-500 group-hover:text-emerald-400 transition text-lg">→</span>
           </Link>
         </div>
       </div>

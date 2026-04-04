@@ -1,6 +1,5 @@
 'use client'
 
-import GoalCard from './GoalCard'
 import type { WeightDataPoint } from './WeightChart'
 
 interface WeightStatsProps {
@@ -8,6 +7,7 @@ interface WeightStatsProps {
   goal?: number
   startWeight?: number
   targetWeight?: number
+  onAddWeight?: () => void
 }
 
 /**
@@ -16,7 +16,6 @@ interface WeightStatsProps {
 function computeStreak(data: WeightDataPoint[]): number {
   if (!data.length) return 0
 
-  // Déduplique par jour (YYYY-MM-DD)
   const days = Array.from(
     new Set(data.map((d) => d.date.slice(0, 10)))
   ).sort()
@@ -26,7 +25,6 @@ function computeStreak(data: WeightDataPoint[]): number {
   const today = new Date().toISOString().slice(0, 10)
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
 
-  // Le streak doit inclure aujourd'hui ou hier
   const lastDay = days[days.length - 1]
   if (lastDay !== today && lastDay !== yesterday) return 0
 
@@ -45,37 +43,7 @@ function computeStreak(data: WeightDataPoint[]): number {
   return streak
 }
 
-interface StatCardProps {
-  label: string
-  value: string | null
-  sub?: string
-  accent?: 'emerald' | 'red' | 'neutral'
-  icon?: string
-}
-
-function StatCard({ label, value, sub, accent = 'neutral', icon }: StatCardProps) {
-  const textColor =
-    accent === 'emerald'
-      ? 'text-emerald-400'
-      : accent === 'red'
-      ? 'text-red-400'
-      : 'text-white'
-
-  return (
-    <div className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 min-w-0">
-      <div className="flex items-center gap-1.5">
-        {icon && <span className="text-base leading-none">{icon}</span>}
-        <p className="text-white/40 text-xs font-medium uppercase tracking-wider truncate">{label}</p>
-      </div>
-      <p className={`text-xl font-bold leading-none truncate ${textColor}`}>
-        {value ?? <span className="text-white/20">—</span>}
-      </p>
-      {sub && <p className="text-white/30 text-xs mt-0.5 truncate">{sub}</p>}
-    </div>
-  )
-}
-
-export default function WeightStats({ data, goal, startWeight, targetWeight }: WeightStatsProps) {
+export default function WeightStats({ data, goal, startWeight, targetWeight, onAddWeight }: WeightStatsProps) {
   const current = data.length ? data[data.length - 1].weight : null
   const first = data.length > 1 ? data[0].weight : null
 
@@ -94,28 +62,16 @@ export default function WeightStats({ data, goal, startWeight, targetWeight }: W
         : `= 0 kg`
       : null
 
-  const goalDelta =
-    current !== null && goal != null
-      ? parseFloat((current - goal).toFixed(1))
-      : null
-
-  const goalSub =
-    goalDelta !== null
-      ? goalDelta > 0
-        ? `${goalDelta} kg à perdre`
-        : goalDelta < 0
-        ? `${Math.abs(goalDelta)} kg sous l'objectif 🎉`
-        : 'Objectif atteint ! 🎯'
-      : undefined
-
   const streak = computeStreak(data)
 
-  // Calcule la progression vers l'objectif (pour le badge motivant)
+  const effectiveTarget = targetWeight ?? goal ?? null
+
+  // Calcule la progression vers l'objectif
   const effectiveStart = startWeight ?? first ?? null
   const goalProgress =
-    current !== null && targetWeight != null && effectiveStart !== null
+    current !== null && effectiveTarget !== null && effectiveStart !== null
       ? (() => {
-          const totalDelta = effectiveStart - targetWeight
+          const totalDelta = effectiveStart - effectiveTarget
           const progressDelta = effectiveStart - current
           if (totalDelta === 0) return 100
           const pct = Math.round((progressDelta / totalDelta) * 100)
@@ -123,68 +79,96 @@ export default function WeightStats({ data, goal, startWeight, targetWeight }: W
         })()
       : null
 
-  // Badge motivant selon la progression
-  const motivationBadge =
-    goalProgress !== null
-      ? goalProgress >= 100
-        ? { label: '🏆 Objectif atteint !', color: 'text-yellow-400 bg-yellow-400/10' }
-        : goalProgress >= 50
-        ? { label: '🔥 En feu', color: 'text-orange-400 bg-orange-400/10' }
-        : { label: '💪 Continue', color: 'text-blue-400 bg-blue-400/10' }
-      : null
+  const isGain = delta !== null && delta > 0
+  const isLoss = delta !== null && delta < 0
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Grille de stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard
-          label="Poids actuel"
-          value={current !== null ? `${current.toFixed(1)} kg` : null}
-          sub={data.length ? `Dernière pesée` : 'Aucune pesée'}
-          icon="⚖️"
-        />
-        <StatCard
-          label="Objectif"
-          value={goal != null ? `${goal} kg` : null}
-          sub={goalSub}
-          accent={goalDelta !== null && goalDelta <= 0 ? 'emerald' : 'neutral'}
-          icon="🎯"
-        />
-        <StatCard
-          label="Évolution"
-          value={deltaStr}
-          sub={data.length > 1 ? `depuis le départ` : 'Pas encore assez de données'}
-          accent={delta !== null ? (delta < 0 ? 'emerald' : delta > 0 ? 'red' : 'neutral') : 'neutral'}
-          icon="📉"
-        />
-        <StatCard
-          label="Streak"
-          value={streak > 0 ? `${streak} jour${streak > 1 ? 's' : ''}` : null}
-          sub={streak > 0 ? '🔥 continue comme ça !' : "Pèse-toi aujourd'hui"}
-          accent={streak >= 3 ? 'emerald' : 'neutral'}
-          icon="🗓️"
-        />
+      {/* ── HERO CARD ── */}
+      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent p-5">
+        {/* Subtle glow blob */}
+        <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl" />
+
+        {/* Top row: current weight + delta */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-sm text-white/40 mb-1">Poids actuel</p>
+            <p className="text-5xl font-black text-white leading-none overflow-visible">
+              {current !== null ? `${current.toFixed(1)} kg` : '—'}
+            </p>
+          </div>
+
+          {deltaStr && (
+            <div className={`shrink-0 text-right mt-1 ${isLoss ? 'text-emerald-400' : isGain ? 'text-red-400' : 'text-white/40'}`}>
+              <p className="text-2xl font-bold leading-none">{deltaStr}</p>
+              <p className="text-xs text-white/30 mt-1">
+                depuis {effectiveFirst ? `${effectiveFirst} kg` : 'le départ'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Progress bar */}
+        {goalProgress !== null && effectiveTarget !== null && (
+          <div className="mt-5">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-700"
+                  style={{ width: `${goalProgress}%` }}
+                />
+              </div>
+              <span className="text-xs text-white/40 tabular-nums shrink-0">{goalProgress}%</span>
+              <span className="text-xs text-white/30 shrink-0">🎯 {effectiveTarget} kg</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Badge motivant + mini barre de progression */}
-      {goalProgress !== null && motivationBadge && (
-        <div className="bg-[#1a1a1a] border border-white/5 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-emerald-500 rounded-full transition-all"
-                style={{ width: `${goalProgress}%` }}
-              />
-            </div>
-            <span className="text-xs text-white/40 tabular-nums shrink-0">{goalProgress}%</span>
-          </div>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${motivationBadge.color}`}>
-            {motivationBadge.label}
-          </span>
-        </div>
+      {/* ── ADD BUTTON ── */}
+      {onAddWeight && (
+        <button
+          onClick={onAddWeight}
+          className="w-full bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] text-black font-semibold text-sm rounded-2xl py-3.5 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+        >
+          <span className="text-xl font-bold leading-none">+</span>
+          <span>Ajouter mon poids aujourd&apos;hui</span>
+        </button>
       )}
 
+      {/* ── SECONDARY STATS ── */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Évolution */}
+        <div className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 min-w-0">
+          <p className="text-white/40 text-xs">Évolution</p>
+          <p className={`text-2xl font-bold leading-none ${isLoss ? 'text-emerald-400' : isGain ? 'text-red-400' : 'text-white/30'}`}>
+            {deltaStr ?? '—'}
+          </p>
+          <p className="text-white/25 text-xs mt-0.5">depuis le départ</p>
+        </div>
 
+        {/* Streak */}
+        <div className={`rounded-2xl p-4 flex flex-col gap-1 min-w-0 border ${
+          streak > 0
+            ? 'bg-amber-500/10 border-amber-500/20'
+            : 'bg-[#1a1a1a] border-white/5'
+        }`}>
+          <p className="text-white/40 text-xs">Streak</p>
+          <div className="flex items-center gap-1.5">
+            {streak > 0 ? (
+              <span className="text-xl" style={{ animation: 'pulse 2s infinite' }}>🔥</span>
+            ) : (
+              <span className="text-xl opacity-30">🔥</span>
+            )}
+            <p className={`text-2xl font-bold leading-none ${streak > 0 ? 'text-amber-400' : 'text-white/30'}`}>
+              {streak > 0 ? `${streak}j` : '—'}
+            </p>
+          </div>
+          <p className="text-white/25 text-xs mt-0.5">
+            {streak > 0 ? 'continue comme ça !' : "Pèse-toi aujourd'hui"}
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

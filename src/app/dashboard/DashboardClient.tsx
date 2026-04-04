@@ -12,7 +12,7 @@ interface DashboardClientProps {
   userImage?: string | null
 }
 
-export default function DashboardClient({ initialEntries, targetWeight, startWeight, userImage }: DashboardClientProps) {
+export default function DashboardClient({ initialEntries, targetWeight, startWeight }: DashboardClientProps) {
   const [entries, setEntries] = useState<WeightDataPoint[]>(initialEntries)
   const [showForm, setShowForm] = useState(false)
 
@@ -23,12 +23,10 @@ export default function DashboardClient({ initialEntries, targetWeight, startWei
           ...prev,
           { date: entry.date, weight: entry.weight, note: entry.note },
         ]
-        // Sort by date ascending
         return updated.sort(
           (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
         )
       })
-      // Close modal after short delay so success message is visible
       setTimeout(() => setShowForm(false), 1500)
     },
     []
@@ -38,16 +36,14 @@ export default function DashboardClient({ initialEntries, targetWeight, startWei
 
   return (
     <div className="space-y-4">
-      {/* Stats row */}
-      <WeightStats data={entries} startWeight={startWeight ?? undefined} targetWeight={targetWeight ?? undefined} goal={targetWeight ?? undefined} />
-
-      {/* CTA button */}
-      <button
-        onClick={() => setShowForm(true)}
-        className="w-full bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] text-black font-semibold text-sm rounded-2xl py-3.5 transition-all shadow-lg shadow-emerald-500/20"
-      >
-        ＋ Ajouter mon poids aujourd&apos;hui
-      </button>
+      {/* Hero stats + CTA button */}
+      <WeightStats
+        data={entries}
+        startWeight={startWeight ?? undefined}
+        targetWeight={targetWeight ?? undefined}
+        goal={targetWeight ?? undefined}
+        onAddWeight={() => setShowForm(true)}
+      />
 
       {/* Chart or empty state */}
       {hasData ? (
