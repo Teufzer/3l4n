@@ -75,7 +75,10 @@ export async function POST(req: NextRequest) {
 
     // Create email verification token
     const verification = await prisma.emailVerification.create({
-      data: { userId: user.id },
+      data: {
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
+      },
     })
 
     // Send verification email (non-blocking — don't fail registration if email fails)

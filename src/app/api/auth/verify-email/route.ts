@@ -17,6 +17,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Lien invalide ou expiré' }, { status: 400 })
     }
 
+    // Vérifier l'expiry (24h)
+    if (verification.expiresAt && verification.expiresAt < new Date()) {
+      await prisma.emailVerification.delete({ where: { token } })
+      return NextResponse.json({ error: 'Lien expiré' }, { status: 400 })
+    }
+
     await prisma.$transaction([
       prisma.user.update({
         where: { id: verification.userId },
