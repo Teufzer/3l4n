@@ -20,7 +20,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         take: 5,
         include: { reactions: true },
       },
-      _count: { select: { posts: true, weightEntries: true } },
+      _count: { select: { posts: true, weightEntries: true, followers: true, following: true } },
     },
   })
 

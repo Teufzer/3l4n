@@ -11,14 +11,78 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit
     const userId = searchParams.get('userId')
 
+    const session = await auth()
+    const currentUserId = session?.user?.id ?? null
+
+    // Build block/follow filters for authenticated users browsing the general feed
+    let blockedUserIds: string[] = []
+    let followedUserIds: string[] = []
+
+    if (currentUserId && !userId) {
+      const [blocks, follows] = await Promise.all([
+        prisma.block.findMany({
+          where: {
+            OR: [
+              { blockerId: currentUserId },
+              { blockedId: currentUserId },
+            ],
+          },
+          select: { blockerId: true, blockedId: true },
+        }),
+        prisma.follow.findMany({
+          where: { followerId: currentUserId },
+          select: { followingId: true },
+        }),
+      ])
+
+      blockedUserIds = blocks.map((b) =>
+        b.blockerId === currentUserId ? b.blockedId : b.blockerId
+      )
+      followedUserIds = follows.map((f) => f.followingId)
+    }
+
+    const whereClause = {
+      user: { banned: false },
+      ...(userId
+        ? { userId }
+        : blockedUserIds.length > 0
+        ? { userId: { notIn: blockedUserIds } }
+        : {}),
+    }
+
+    // If viewing general feed as authenticated user with follows, fetch more to reorder
+    if (currentUserId && !userId && followedUserIds.length > 0) {
+      // Fetch a larger set and sort: followed users first, then by date desc
+      const fetchLimit = Math.min(limit * 5, 200)
+      const allPosts = await prisma.post.findMany({
+        skip,
+        take: fetchLimit,
+        orderBy: { createdAt: 'desc' },
+        where: whereClause,
+        include: {
+          user: {
+            select: { id: true, name: true, username: true, avatar: true, image: true, verified: true },
+          },
+          reactions: {
+            select: { id: true, type: true, userId: true },
+          },
+        },
+      })
+
+      const followedSet = new Set(followedUserIds)
+      const followed = allPosts.filter((p) => followedSet.has(p.userId))
+      const others = allPosts.filter((p) => !followedSet.has(p.userId))
+      const sorted = [...followed, ...others].slice(0, limit)
+
+      const normalized = sorted.map(({ user, ...rest }) => ({ ...rest, author: user }))
+      return NextResponse.json({ posts: normalized, page, limit })
+    }
+
     const posts = await prisma.post.findMany({
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' },
-      where: {
-        user: { banned: false },
-        ...(userId ? { userId } : {}),
-      },
+      where: whereClause,
       include: {
         user: {
           select: { id: true, name: true, username: true, avatar: true, image: true, verified: true },

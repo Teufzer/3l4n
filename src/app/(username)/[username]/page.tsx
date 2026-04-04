@@ -22,7 +22,7 @@ export default async function UsernamePage({ params }: Props) {
         take: 5,
         include: { reactions: true },
       },
-      _count: { select: { posts: true, weightEntries: true } },
+      _count: { select: { posts: true, weightEntries: true, followers: true, following: true } },
     },
   })
 

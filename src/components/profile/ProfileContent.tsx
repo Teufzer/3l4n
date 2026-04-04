@@ -6,6 +6,7 @@ import VerifiedBadge from '@/components/VerifiedBadge'
 import { Session } from 'next-auth'
 import WeightChart, { WeightDataPoint } from '@/components/weight/WeightChart'
 import WeightStats from '@/components/weight/WeightStats'
+import FollowButton from '@/components/profile/FollowButton'
 
 import PostCard, { Post } from '@/components/feed/PostCard'
 
@@ -24,7 +25,7 @@ interface ProfileUser {
   targetWeight: number | null
   weightEntries: { id: string; weight: number; date: Date; note: string | null }[]
   posts: { id: string; content: string; createdAt: Date; reactions: { type: string }[] }[]
-  _count: { posts: number; weightEntries: number }
+  _count: { posts: number; weightEntries: number; followers?: number; following?: number }
 }
 
 type Tab = 'posts' | 'courbe' | 'medias'
@@ -108,9 +109,25 @@ export default function ProfileContent({
   const [postsLoading, setPostsLoading] = useState(false)
   const [postsFetched, setPostsFetched] = useState(false)
 
+  const [followersCount, setFollowersCount] = useState(user._count.followers ?? 0)
+  const [blockMenuOpen, setBlockMenuOpen] = useState(false)
+  const [blocking, setBlocking] = useState(false)
+
   const isOwnProfile = session?.user?.id === user.id
   const stats = computeWeightStats(user.weightEntries, user.startWeight)
   const streak = computeStreak(user.weightEntries)
+
+  const handleBlock = async () => {
+    setBlocking(true)
+    setBlockMenuOpen(false)
+    try {
+      await fetch(`/api/users/${user.id}/block`, { method: 'POST' })
+    } catch {
+      // silent
+    } finally {
+      setBlocking(false)
+    }
+  }
 
   const chartData: WeightDataPoint[] = user.weightEntries.map((e) => ({
     date: new Date(e.date).toISOString(),
@@ -211,17 +228,58 @@ export default function ProfileContent({
               )}
             </div>
 
-            {/* Edit button */}
-            {isOwnProfile && (
-              <div className="mb-2">
+            {/* Action buttons */}
+            <div className="mb-2 flex items-center gap-2">
+              {isOwnProfile ? (
                 <Link
                   href="/settings"
                   className="px-4 py-1.5 rounded-full border border-white/20 text-white text-sm font-semibold hover:bg-white/10 transition"
                 >
                   Modifier le profil
                 </Link>
-              </div>
-            )}
+              ) : (
+                <>
+                  <FollowButton
+                    userId={user.id}
+                    initialFollowersCount={followersCount}
+                    onFollowChange={(_, count) => setFollowersCount(count)}
+                  />
+                  {/* Block menu */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setBlockMenuOpen((v) => !v)}
+                      className="p-2 rounded-full border border-zinc-700 text-zinc-400 hover:bg-zinc-800 transition"
+                      aria-label="Plus d'options"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="5" cy="12" r="1.5" />
+                        <circle cx="12" cy="12" r="1.5" />
+                        <circle cx="19" cy="12" r="1.5" />
+                      </svg>
+                    </button>
+                    {blockMenuOpen && (
+                      <div className="absolute right-0 top-10 z-50 bg-[#1a1a1a] border border-zinc-700 rounded-xl shadow-xl min-w-[160px] overflow-hidden">
+                        <button
+                          onClick={handleBlock}
+                          disabled={blocking}
+                          className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-zinc-800 transition flex items-center gap-2"
+                        >
+                          {blocking ? (
+                            <span className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin inline-block" />
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <circle cx="12" cy="12" r="9" />
+                              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                            </svg>
+                          )}
+                          Bloquer
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Profile info */}
@@ -243,8 +301,20 @@ export default function ProfileContent({
               Membre depuis {formatMemberSince(user.createdAt)}
             </p>
 
+            {/* Follow counts */}
+            <div className="flex items-center gap-4 pt-2 text-sm">
+              <span>
+                <span className="text-white font-bold">{followersCount}</span>
+                <span className="text-zinc-500 ml-1">abonné{followersCount !== 1 ? 's' : ''}</span>
+              </span>
+              <span>
+                <span className="text-white font-bold">{user._count.following ?? 0}</span>
+                <span className="text-zinc-500 ml-1">abonnements</span>
+              </span>
+            </div>
+
             {/* Inline stats */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-sm">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-sm">
               <span>
                 <span className="text-white font-bold">{user._count.posts}</span>
                 <span className="text-zinc-500 ml-1">Posts</span>
