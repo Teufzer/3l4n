@@ -10,10 +10,7 @@ export default async function Home() {
     <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col">
 
       {/* Nav */}
-      <header className="flex items-center justify-between px-6 py-5">
-        <span className="text-xl font-black tracking-tight">
-          3l<span className="text-emerald-400">4</span>n
-        </span>
+      <header className="flex items-center justify-end px-6 py-5">
         <Link
           href="/login"
           className="text-sm text-white/60 hover:text-white transition"
@@ -31,9 +28,9 @@ export default async function Home() {
             3l<span className="text-emerald-400">4</span>n
           </h1>
 
-          {/* Accroche */}
+          {/* Accroche — le 'a' de élan en vert pour le jeu de mots */}
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 mt-4">
-            Ton élan commence ici.
+            Ton él<span className="text-emerald-400">a</span>n commence ici.
           </h2>
 
           {/* Sous-titre */}
