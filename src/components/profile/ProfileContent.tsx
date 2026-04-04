@@ -15,6 +15,7 @@ interface ProfileUser {
   username: string | null
   image: string | null
   avatar: string | null
+  bannerUrl?: string | null
   bio: string | null
   createdAt: Date
   startWeight: number | null
@@ -174,7 +175,18 @@ export default function ProfileContent({
       {/* ── Banner + avatar ────────────────────────────────────── */}
       <div className="relative">
         {/* Banner */}
-        <div className="h-48 bg-gradient-to-br from-emerald-600 to-emerald-900" />
+        <div className="h-48 relative overflow-hidden">
+          {user.bannerUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.bannerUrl}
+              alt="Bannière"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-emerald-600 to-emerald-900" />
+          )}
+        </div>
 
         {/* Avatar — overlaps banner */}
         <div className="px-4">

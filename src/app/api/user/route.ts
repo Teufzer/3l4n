@@ -21,6 +21,7 @@ export async function GET() {
       startWeight: true,
       email: true,
       avatar: true,
+      bannerUrl: true,
     },
   })
 

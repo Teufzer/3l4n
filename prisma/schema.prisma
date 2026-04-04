@@ -20,6 +20,7 @@ model User {
   username             String?        @unique
   name                 String?
   avatar               String?
+  bannerUrl            String?
   bio                  String?
   targetWeight         Float?
   startWeight          Float?
