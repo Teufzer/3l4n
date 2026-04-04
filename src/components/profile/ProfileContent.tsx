@@ -111,7 +111,8 @@ export default function ProfileContent({
   const [postsLoading, setPostsLoading] = useState(false)
   const [postsFetched, setPostsFetched] = useState(false)
 
-  const [followersCount, setFollowersCount] = useState(user._count.followers ?? 0)
+  // _count.following = gens qui TE suivent (vrais abonnés)
+  const [followersCount, setFollowersCount] = useState(user._count.following ?? 0)
   const [blockMenuOpen, setBlockMenuOpen] = useState(false)
   const [blocking, setBlocking] = useState(false)
 
@@ -334,13 +335,15 @@ export default function ProfileContent({
 
             {/* Follow counts */}
             <div className="flex items-center gap-4 pt-2 text-sm">
+              {/* followersCount = _count.followers = gens QUE tu suis (abonnements) */}
+              {/* _count.following = gens QUI te suivent (abonnés) */}
               <Link href={user.username ? `/${user.username}/followers` : `/profile/${user.id}/followers`} className="hover:underline">
-                <span className="text-white font-bold">{followersCount}</span>
-                <span className="text-zinc-500 ml-1">abonné{followersCount !== 1 ? 's' : ''}</span>
+                <span className="text-white font-bold">{user._count.following ?? 0}</span>
+                <span className="text-zinc-500 ml-1">abonné{(user._count.following ?? 0) !== 1 ? 's' : ''}</span>
               </Link>
               <Link href={user.username ? `/${user.username}/following` : `/profile/${user.id}/following`} className="hover:underline">
-                <span className="text-white font-bold">{user._count.following ?? 0}</span>
-                <span className="text-zinc-500 ml-1">abonnement{(user._count.following ?? 0) !== 1 ? 's' : ''}</span>
+                <span className="text-white font-bold">{followersCount}</span>
+                <span className="text-zinc-500 ml-1">abonnement{followersCount !== 1 ? 's' : ''}</span>
               </Link>
             </div>
 
