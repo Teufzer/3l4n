@@ -32,8 +32,19 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { data: session } = useSession()
-  const user = session?.user as { id?: string; name?: string; image?: string; username?: string } | undefined
+  const { data: session, status } = useSession()
+  const user = session?.user as { id?: string; name?: string; image?: string; username?: string; verified?: boolean } | undefined
+
+  // Pendant le chargement de la session, on affiche un skeleton discret
+  if (status === 'loading') {
+    return (
+      <aside className="flex flex-col h-full w-full px-4 xl:px-6 py-4">
+        <div className="text-2xl font-black tracking-tight mb-6 px-3 py-3">
+          3l<span className="text-emerald-400">4</span>n
+        </div>
+      </aside>
+    )
+  }
 
   const [notifCount, setNotifCount] = useState(0)
 

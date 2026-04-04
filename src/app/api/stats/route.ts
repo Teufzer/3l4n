@@ -58,6 +58,7 @@ export async function GET() {
         select: {
           username: true,
           name: true,
+          weightPrivate: true,
         },
       },
     },
@@ -70,6 +71,8 @@ export async function GET() {
   >()
 
   for (const entry of weeklyEntries) {
+    // Skip users who have set their weight data as private
+    if (entry.user.weightPrivate) continue
     if (!byUser.has(entry.userId)) {
       byUser.set(entry.userId, {
         username: entry.user.username,
