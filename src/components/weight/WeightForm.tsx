@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 interface WeightFormProps {
   onSuccess?: (entry: { id: string; weight: number; date: string; note?: string | null }) => void
@@ -43,6 +44,7 @@ export default function WeightForm({ onSuccess }: WeightFormProps) {
 
       const data = await res.json()
       setSuccess(true)
+      toast.success('Pesée enregistrée ! 📊')
       setWeight('')
       setNote('')
       onSuccess?.(data.entry)

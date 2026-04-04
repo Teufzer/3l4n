@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 interface PostFormProps {
   onPostCreated?: () => void
@@ -45,8 +46,10 @@ export default function PostForm({ onPostCreated, userName = 'Moi' }: PostFormPr
 
       setContent('')
       onPostCreated?.()
+      toast.success("Post publié ! 💪")
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue')
+      toast.error(err instanceof Error ? err.message : "Erreur inconnue")
     } finally {
       setLoading(false)
     }
