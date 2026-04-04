@@ -97,16 +97,7 @@ export default function ProfileContent({ user, session }: { user: ProfileUser; s
   return (
     <div className="min-h-screen bg-[#0f0f0f] px-4 py-8 pb-24">
       <div className="max-w-lg mx-auto">
-        {/* Back */}
-        <Link
-          href="/feed"
-          className="inline-flex items-center gap-2 text-zinc-500 hover:text-white text-sm mb-6 transition"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Retour
-        </Link>
+
 
         {/* Profile header */}
         <div className="bg-[#1a1a1a] rounded-2xl p-6 border border-zinc-800 mb-4">
