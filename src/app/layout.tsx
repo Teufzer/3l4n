@@ -5,6 +5,7 @@ import BottomNavWrapper from "@/components/BottomNavWrapper";
 import { Toaster } from "sonner";
 import Providers from "@/components/Providers";
 import Sidebar from "@/components/Sidebar";
+import RightSidebar from "@/components/RightSidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,14 +35,25 @@ export default function RootLayout({
       <body className="min-h-full bg-[#0f0f0f] text-white">
         <Providers>
           <div className="flex min-h-screen">
+            {/* Sidebar gauche - desktop uniquement */}
             <Sidebar />
-            <div className="flex-1 lg:ml-20 xl:ml-64 flex flex-col">
+
+            {/* Contenu principal */}
+            <div className="flex-1 lg:ml-[275px] xl:ml-[320px] flex flex-col min-h-screen">
               <main className="flex-1">
-                <div className="max-w-[600px] mx-auto lg:border-x lg:border-white/5 min-h-screen">
+                <div className="max-w-[680px] lg:border-r lg:border-white/5 min-h-screen">
                   {children}
                 </div>
               </main>
-              <BottomNavWrapper />
+              {/* Bottom nav - mobile uniquement */}
+              <div className="lg:hidden">
+                <BottomNavWrapper />
+              </div>
+            </div>
+
+            {/* Sidebar droite - xl uniquement */}
+            <div className="hidden xl:block w-[380px] shrink-0 px-6 py-4">
+              <RightSidebar />
             </div>
           </div>
         </Providers>
