@@ -45,7 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           email: user.email,
           name: user.name,
-          image: user.avatar,
+          image: user.avatar || null, // jamais la photo Google
           role: user.role,
           banned: user.banned,
           username: user.username,
@@ -64,7 +64,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.image = user.image
+        token.image = null // on n'utilise pas la photo Google
         token.role = (user as { role?: string }).role
         token.banned = (user as { banned?: boolean }).banned
         token.username = (user as { username?: string | null }).username
@@ -78,8 +78,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (dbUser) {
           token.role = dbUser.role
           token.banned = dbUser.banned
-          // Priorité à l'avatar R2 sur la photo Google
-          token.image = dbUser.avatar || dbUser.image
+          // Uniquement l'avatar R2, jamais la photo Google
+          token.image = dbUser.avatar || null
           token.username = dbUser.username
         }
       }
