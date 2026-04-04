@@ -51,6 +51,11 @@ export default function Sidebar() {
     return () => clearInterval(interval)
   }, [])
 
+  // Reset badge quand on visite la page notifications
+  useEffect(() => {
+    if (pathname === '/notifications') setNotifCount(0)
+  }, [pathname])
+
   const profileHref = user?.username ? `/${user.username}` : user?.id ? `/profile/${user.id}` : '/login'
 
   const [searchValue, setSearchValue] = useState('')

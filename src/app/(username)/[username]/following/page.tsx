@@ -5,19 +5,21 @@ import Link from 'next/link'
 import FollowUserCard from '@/components/profile/FollowUserCard'
 
 interface Props {
-  params: Promise<{ id: string }>
+  params: Promise<{ username: string }>
 }
 
 export default async function FollowingPage({ params }: Props) {
-  const { id } = await params
+  const { username } = await params
+  const clean = username.replace(/^@/, '').toLowerCase()
   const session = await auth()
 
   const user = await prisma.user.findUnique({
-    where: { id },
+    where: { username: clean },
     select: { id: true, name: true, username: true },
   })
 
   if (!user) notFound()
+  const id = user.id
 
   const follows = await prisma.follow.findMany({
     where: { followerId: id },
