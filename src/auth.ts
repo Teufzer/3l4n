@@ -81,11 +81,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.id && !user) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, banned: true, image: true, avatar: true, username: true, verified: true, emailVerified: true, accounts: { select: { provider: true } } },
+          select: { role: true, banned: true, image: true, avatar: true, username: true, name: true, verified: true, emailVerified: true, accounts: { select: { provider: true } } },
         })
         if (dbUser) {
           token.role = dbUser.role
           token.banned = dbUser.banned
+          token.name = dbUser.name
           // Uniquement l'avatar R2, jamais la photo Google
           token.image = dbUser.avatar || null
           token.username = dbUser.username
