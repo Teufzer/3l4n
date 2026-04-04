@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 
 const PUBLIC_ROUTES = ['/', '/login', '/register']
+const FULL_WIDTH_PREFIXES = ['/admin', '/legal']
 
 export default function AppShell({ children, sidebar, rightSidebar, bottomNav }: {
   children: React.ReactNode
@@ -11,7 +12,7 @@ export default function AppShell({ children, sidebar, rightSidebar, bottomNav }:
   bottomNav: React.ReactNode
 }) {
   const pathname = usePathname()
-  const isPublic = PUBLIC_ROUTES.includes(pathname)
+  const isPublic = PUBLIC_ROUTES.includes(pathname) || FULL_WIDTH_PREFIXES.some(p => pathname.startsWith(p))
 
   if (isPublic) {
     return <>{children}</>
