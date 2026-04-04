@@ -1,7 +1,8 @@
 'use client'
 
+import { useRef, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import VerifiedBadge from '@/components/VerifiedBadge'
 
@@ -9,6 +10,10 @@ const navItems = [
   {
     href: '/feed', label: 'Accueil',
     icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+  },
+  {
+    href: '/search', label: 'Rechercher',
+    icon: <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" /></svg>
   },
   {
     href: '/notifications', label: 'Notifications',
@@ -26,10 +31,33 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { data: session } = useSession()
   const user = session?.user as { id?: string; name?: string; image?: string; username?: string } | undefined
 
   const profileHref = user?.username ? `/${user.username}` : user?.id ? `/profile/${user.id}` : '/login'
+
+  const [searchValue, setSearchValue] = useState('')
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setSearchValue(val)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      if (val.trim()) {
+        router.push(`/search?q=${encodeURIComponent(val.trim())}`)
+      } else {
+        router.push('/search')
+      }
+    }, 300)
+  }
+
+  const handleSearchFocus = () => {
+    if (!searchValue.trim()) {
+      router.push('/search')
+    }
+  }
 
   return (
     <aside className="flex flex-col h-full w-full px-4 xl:px-6 py-4">
@@ -39,6 +67,23 @@ export default function Sidebar() {
           3l<span className="text-emerald-400">4</span>n
         </span>
       </Link>
+
+      {/* Search bar */}
+      <div className="relative mb-3 px-1">
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          </svg>
+        </span>
+        <input
+          type="search"
+          value={searchValue}
+          onChange={handleSearchChange}
+          onFocus={handleSearchFocus}
+          placeholder="Rechercher..."
+          className="w-full bg-white/5 rounded-full pl-9 pr-4 py-2 text-sm text-white/60 placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:text-white transition"
+        />
+      </div>
 
       {/* Nav links */}
       <nav className="flex flex-col gap-1 flex-1">
