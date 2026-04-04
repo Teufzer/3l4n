@@ -46,6 +46,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.name,
           image: user.avatar,
+          role: user.role,
+          banned: user.banned,
         }
       },
     }),
@@ -61,12 +63,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
+        token.role = (user as { role?: string }).role
+        token.banned = (user as { banned?: boolean }).banned
+      }
+      // Refresh role/banned from DB on each token refresh
+      if (token.id && !user) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { role: true, banned: true },
+        })
+        if (dbUser) {
+          token.role = dbUser.role
+          token.banned = dbUser.banned
+        }
       }
       return token
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string
+        session.user.role = token.role as 'USER' | 'ADMIN'
+        session.user.banned = token.banned as boolean
       }
       return session
     },

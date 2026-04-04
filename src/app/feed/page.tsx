@@ -2,6 +2,7 @@ import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Feed from '@/components/feed/Feed'
+import { isR2Configured } from '@/lib/r2'
 
 export default async function FeedPage() {
   const session = await auth()
@@ -9,6 +10,8 @@ export default async function FeedPage() {
   if (!session) {
     redirect('/login')
   }
+
+  const r2Enabled = isR2Configured()
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
@@ -36,7 +39,7 @@ export default async function FeedPage() {
       </header>
 
       {/* Feed */}
-      <Feed />
+      <Feed r2Enabled={r2Enabled} />
     </div>
   )
 }

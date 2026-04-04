@@ -7,7 +7,11 @@ import PostForm from './PostForm'
 
 const PAGE_SIZE = 10
 
-export default function Feed() {
+interface FeedProps {
+  r2Enabled?: boolean
+}
+
+export default function Feed({ r2Enabled = false }: FeedProps) {
   const { data: session } = useSession()
   const currentUserId = session?.user?.id
 
@@ -62,7 +66,7 @@ export default function Feed() {
 
       {/* Post form — only if logged in */}
       {currentUserId ? (
-        <PostForm onPostCreated={handlePostCreated} userName={session?.user?.name ?? 'Moi'} />
+        <PostForm onPostCreated={handlePostCreated} userName={session?.user?.name ?? 'Moi'} r2Enabled={r2Enabled} />
       ) : (
         <div className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-4 text-center text-white/40 text-sm">
           <a href="/login" className="text-emerald-400 hover:underline">Connecte-toi</a> pour partager ta progression ✨

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
+import ReportButton from './ReportButton'
 
 interface CommentAuthor {
   id: string
@@ -165,6 +166,13 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
                     {comment.author.name}
                   </span>
                   <span className="text-white/30 text-[10px]">{formatDate(comment.createdAt)}</span>
+                  <div className="ml-auto">
+                    <ReportButton
+                      commentId={comment.id}
+                      postIdForComment={postId}
+                      currentUserId={currentUserId}
+                    />
+                  </div>
                 </div>
                 <p className="text-white/70 text-xs leading-relaxed whitespace-pre-wrap">
                   {comment.content}

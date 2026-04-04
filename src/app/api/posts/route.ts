@@ -14,6 +14,9 @@ export async function GET(req: NextRequest) {
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' },
+      where: {
+        user: { banned: false },
+      },
       include: {
         user: {
           select: { id: true, name: true, avatar: true, image: true },
@@ -45,8 +48,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
+    if (session.user.banned) {
+      return NextResponse.json({ error: 'Ton compte est suspendu' }, { status: 403 })
+    }
+
     const body = await req.json()
-    const { content } = body
+    const { content, imageUrl } = body
 
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
       return NextResponse.json({ error: 'Le contenu est requis' }, { status: 400 })
@@ -56,10 +63,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Le post ne doit pas dépasser 500 caractères' }, { status: 400 })
     }
 
+    // Validate imageUrl if provided
+    const safeImageUrl = imageUrl && typeof imageUrl === 'string' ? imageUrl : null
+
     const post = await prisma.post.create({
       data: {
         content: content.trim(),
         userId: session.user.id,
+        ...(safeImageUrl ? { imageUrl: safeImageUrl } : {}),
       },
       include: {
         user: {

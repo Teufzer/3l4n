@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 
 interface PostFormProps {
   onPostCreated?: () => void
   userName?: string
+  r2Enabled?: boolean
 }
 
 function getInitials(name: string) {
@@ -17,17 +18,107 @@ function getInitials(name: string) {
     .slice(0, 2)
 }
 
-export default function PostForm({ onPostCreated, userName = 'Moi' }: PostFormProps) {
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+const MAX_SIZE_BYTES = 10 * 1024 * 1024 // 10MB
+
+export default function PostForm({ onPostCreated, userName = 'Moi', r2Enabled = false }: PostFormProps) {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Photo state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const MAX_CHARS = 500
+
+  const handleFileSelect = useCallback(async (file: File) => {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.error('Format non supporté. Utilise jpg, png, gif ou webp.')
+      return
+    }
+    if (file.size > MAX_SIZE_BYTES) {
+      toast.error('Image trop lourde (max 10 Mo).')
+      return
+    }
+
+    // Show local preview immediately
+    const localUrl = URL.createObjectURL(file)
+    setSelectedFile(file)
+    setPreviewUrl(localUrl)
+    setUploadedImageUrl(null)
+
+    // Upload to R2 in background
+    setUploading(true)
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Erreur lors de la préparation du upload')
+      }
+
+      const { uploadUrl, publicUrl } = await res.json()
+
+      // PUT directly to R2 via presigned URL
+      const putRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      })
+
+      if (!putRes.ok) {
+        throw new Error("Erreur lors de l'envoi de la photo")
+      }
+
+      setUploadedImageUrl(publicUrl)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de l'upload")
+      // Clear the photo if upload failed
+      setSelectedFile(null)
+      setPreviewUrl(null)
+      URL.revokeObjectURL(localUrl)
+    } finally {
+      setUploading(false)
+    }
+  }, [])
+
+  const handlePhotoButtonClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) handleFileSelect(file)
+    // Reset input so same file can be re-selected
+    e.target.value = ''
+  }
+
+  const handleRemovePhoto = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    setSelectedFile(null)
+    setPreviewUrl(null)
+    setUploadedImageUrl(null)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = content.trim()
     if (!trimmed || loading) return
+
+    // Don't submit while photo is still uploading
+    if (uploading) {
+      toast.error("La photo est encore en cours d'envoi, patiente un instant…")
+      return
+    }
 
     setLoading(true)
     setError(null)
@@ -36,7 +127,10 @@ export default function PostForm({ onPostCreated, userName = 'Moi' }: PostFormPr
       const res = await fetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: trimmed }),
+        body: JSON.stringify({
+          content: trimmed,
+          ...(uploadedImageUrl ? { imageUrl: uploadedImageUrl } : {}),
+        }),
       })
 
       if (!res.ok) {
@@ -45,11 +139,12 @@ export default function PostForm({ onPostCreated, userName = 'Moi' }: PostFormPr
       }
 
       setContent('')
+      handleRemovePhoto()
       onPostCreated?.()
-      toast.success("Post publié ! 💪")
+      toast.success('Post publié ! 💪')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue')
-      toast.error(err instanceof Error ? err.message : "Erreur inconnue")
+      toast.error(err instanceof Error ? err.message : 'Erreur inconnue')
     } finally {
       setLoading(false)
     }
@@ -81,26 +176,81 @@ export default function PostForm({ onPostCreated, userName = 'Moi' }: PostFormPr
         />
       </div>
 
+      {/* Photo preview */}
+      {previewUrl && (
+        <div className="relative inline-block ml-13">
+          <img
+            src={previewUrl}
+            alt="Aperçu de la photo"
+            className="max-h-32 max-w-xs rounded-xl border border-white/10 object-cover"
+          />
+          {uploading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl">
+              <svg className="w-5 h-5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+            </div>
+          )}
+          {!uploading && (
+            <button
+              type="button"
+              onClick={handleRemovePhoto}
+              className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center hover:bg-red-400 transition-colors"
+              aria-label="Supprimer la photo"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      )}
+
       {error && (
         <p className="text-red-400 text-xs px-1">{error}</p>
       )}
 
       <div className="flex items-center justify-between pt-1 border-t border-white/5">
-        <span
-          className={`text-xs ${
-            isOverLimit
-              ? 'text-red-400'
-              : isNearLimit
-              ? 'text-amber-400'
-              : 'text-white/30'
-          }`}
-        >
-          {remaining} caractères
-        </span>
+        <div className="flex items-center gap-3">
+          {/* Photo button — hidden if R2 not configured */}
+          {r2Enabled && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+                onChange={handleFileInputChange}
+                aria-label="Ajouter une photo"
+              />
+              <button
+                type="button"
+                onClick={handlePhotoButtonClick}
+                disabled={loading || uploading || !!selectedFile}
+                className="text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-lg"
+                title="Ajouter une photo"
+                aria-label="Ajouter une photo"
+              >
+                📷
+              </button>
+            </>
+          )}
+
+          <span
+            className={`text-xs ${
+              isOverLimit
+                ? 'text-red-400'
+                : isNearLimit
+                ? 'text-amber-400'
+                : 'text-white/30'
+            }`}
+          >
+            {remaining} caractères
+          </span>
+        </div>
 
         <button
           type="submit"
-          disabled={loading || !content.trim() || isOverLimit}
+          disabled={loading || !content.trim() || isOverLimit || uploading}
           className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-sm font-semibold
             hover:bg-emerald-400 active:scale-95 transition-all
             disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-500"
