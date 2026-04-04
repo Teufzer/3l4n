@@ -398,7 +398,7 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
                   onKeyDown={handleKeyDown}
                   rows={1}
                   maxLength={300}
-                  placeholder="Ajouter un commentaire… @mention possible"
+                  placeholder="Ajouter un commentaire… tape @ pour mentionner"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white/80 placeholder-white/30 resize-none focus:outline-none focus:border-emerald-500/50 focus:bg-white/8 transition-colors"
                   style={{ minHeight: '36px', maxHeight: '120px' }}
                 />
