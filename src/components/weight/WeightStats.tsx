@@ -79,9 +79,10 @@ export default function WeightStats({ data, goal, startWeight, targetWeight }: W
   const current = data.length ? data[data.length - 1].weight : null
   const first = data.length > 1 ? data[0].weight : null
 
+  const effectiveFirst = startWeight ?? first
   const delta =
-    current !== null && first !== null
-      ? parseFloat((current - first).toFixed(1))
+    current !== null && effectiveFirst !== null
+      ? parseFloat((current - effectiveFirst).toFixed(1))
       : null
 
   const deltaStr =

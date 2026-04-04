@@ -52,33 +52,23 @@ export default function PostForm({ onPostCreated, userName = 'Moi', r2Enabled = 
     setPreviewUrl(localUrl)
     setUploadedImageUrl(null)
 
-    // Upload to R2 in background
+    // Upload via notre serveur (évite les problèmes CORS)
     setUploading(true)
     try {
+      const formData = new FormData()
+      formData.append('file', file)
+
       const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        body: formData,
       })
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || 'Erreur lors de la préparation du upload')
+        throw new Error(data.error || "Erreur lors de l'envoi de la photo")
       }
 
-      const { uploadUrl, publicUrl } = await res.json()
-
-      // PUT directly to R2 via presigned URL
-      const putRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': file.type },
-        body: file,
-      })
-
-      if (!putRes.ok) {
-        throw new Error("Erreur lors de l'envoi de la photo")
-      }
-
+      const { publicUrl } = await res.json()
       setUploadedImageUrl(publicUrl)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erreur lors de l'upload")

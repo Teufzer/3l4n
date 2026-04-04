@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
-import { isR2Configured, isAllowedImageType, generatePresignedUploadUrl } from '@/lib/r2'
+import { isR2Configured, isAllowedImageType, MAX_SIZE_BYTES } from '@/lib/r2'
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { randomUUID } from 'crypto'
 
 // POST /api/upload
-// Body: { filename: string, contentType: string }
-// Returns: { uploadUrl: string, publicUrl: string }
+// Body: FormData with field "file"
+// Returns: { publicUrl: string }
 export async function POST(req: NextRequest) {
   try {
     const session = await auth()
@@ -17,31 +18,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Upload non configuré' }, { status: 503 })
     }
 
-    const body = await req.json()
-    const { filename, contentType } = body
+    const formData = await req.formData()
+    const file = formData.get('file') as File | null
 
-    if (!filename || typeof filename !== 'string') {
-      return NextResponse.json({ error: 'Nom de fichier requis' }, { status: 400 })
+    if (!file) {
+      return NextResponse.json({ error: 'Fichier requis' }, { status: 400 })
     }
 
-    if (!contentType || typeof contentType !== 'string') {
-      return NextResponse.json({ error: 'Type de contenu requis' }, { status: 400 })
-    }
-
-    if (!isAllowedImageType(contentType)) {
+    if (!isAllowedImageType(file.type)) {
       return NextResponse.json(
-        { error: 'Type de fichier non autorisé. Formats acceptés : jpg, png, gif, webp' },
+        { error: 'Format non autorisé. Acceptés : jpg, png, gif, webp' },
         { status: 400 }
       )
     }
 
-    // Build a safe key: userId/uuid.ext
-    const ext = filename.split('.').pop()?.toLowerCase() ?? 'jpg'
+    if (file.size > MAX_SIZE_BYTES) {
+      return NextResponse.json({ error: 'Fichier trop lourd (max 10MB)' }, { status: 400 })
+    }
+
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
     const key = `posts/${session.user.id}/${randomUUID()}.${ext}`
 
-    const { uploadUrl, publicUrl } = await generatePresignedUploadUrl(key, contentType)
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
 
-    return NextResponse.json({ uploadUrl, publicUrl })
+    const client = new S3Client({
+      region: 'auto',
+      endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+      },
+    })
+
+    await client.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: key,
+      Body: buffer,
+      ContentType: file.type,
+    }))
+
+    const publicUrl = `${process.env.R2_PUBLIC_URL!.replace(/\/$/, '')}/${key}`
+
+    return NextResponse.json({ publicUrl })
   } catch (error) {
     console.error('[POST /api/upload]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
