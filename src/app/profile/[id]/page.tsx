@@ -1,30 +1,14 @@
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/auth'
-import { notFound } from 'next/navigation'
-import ProfileContent from '@/components/profile/ProfileContent'
+import { notFound, redirect } from 'next/navigation'
 
-interface ProfilePageProps {
-  params: Promise<{ id: string }>
-}
-
-export default async function ProfilePage({ params }: ProfilePageProps) {
-  const session = await auth()
+export default async function ProfileByIdPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-
   const user = await prisma.user.findUnique({
     where: { id },
-    include: {
-      weightEntries: { orderBy: { date: 'asc' } },
-      posts: {
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-        include: { reactions: true },
-      },
-      _count: { select: { posts: true, weightEntries: true, followers: true, following: true } },
-    },
+    select: { username: true },
   })
-
   if (!user) notFound()
-
-  return <ProfileContent user={user} session={session} />
+  if (user.username) redirect(`/${user.username}`)
+  // Pas encore de username → afficher profil quand même
+  redirect(`/profile-setup`)
 }

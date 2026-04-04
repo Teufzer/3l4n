@@ -30,7 +30,7 @@ function getInitials(name: string | null | undefined) {
 
 export default function FollowUserCard({ user, currentUserId }: FollowUserCardProps) {
   const isOwnProfile = currentUserId === user.id
-  const profileUrl = user.username ? `/@${user.username}` : `/profile/${user.id}`
+  const profileUrl = user.username ? `/${user.username}` : `/profile/${user.id}`
 
   return (
     <div className="flex items-center justify-between gap-3 py-3 px-4 hover:bg-zinc-900/50 transition-colors">

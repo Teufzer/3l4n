@@ -12,7 +12,7 @@ export default async function BottomNavWrapper() {
     if (session.user.username) {
       profileHref = `/${session.user.username}`
     } else if (session.user.id) {
-      profileHref = `/profile/${session.user.id}`
+      profileHref = session.user.username ? `/${session.user.username}` : `/profile/${session.user.id}`
     }
 
     try {
