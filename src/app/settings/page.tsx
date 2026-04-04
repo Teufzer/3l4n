@@ -36,6 +36,7 @@ export default function SettingsPage() {
       .then(({ user }) => {
         if (user) {
           setProfile(user)
+          setUsername(user.username ?? '')
           setName(user.name ?? '')
           setBio(user.bio ?? '')
           setStartWeight(user.startWeight?.toString() ?? '')
@@ -53,6 +54,7 @@ export default function SettingsPage() {
     setSaved(false)
 
     const body: Record<string, unknown> = {
+      username: username.trim() || null,
       name: name.trim() || null,
       bio: bio.trim() || null,
       startWeight: startWeight ? parseFloat(startWeight) : null,
@@ -133,7 +135,7 @@ export default function SettingsPage() {
             {/* Username */}
             <div className="flex flex-col gap-1.5">
               <label htmlFor="username" className="text-sm text-white/60 font-medium">
-                @username
+                @pseudo
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm">@</span>
@@ -142,7 +144,7 @@ export default function SettingsPage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase())}
-                  placeholder="teufeurs"
+                  placeholder="monpseudo"
                   maxLength={30}
                   className="w-full bg-[#111] border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:border-emerald-500/50 transition"
                 />

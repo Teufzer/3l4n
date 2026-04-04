@@ -117,7 +117,9 @@ export default function BottomNav({ profileHref = '/profile' }: BottomNavProps) 
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {navItems.map(({ href, label, icon }) => {
-          const isProfileActive = label === 'Profil' && pathname.startsWith('/profile')
+          const isProfileActive = label === 'Profil' && (
+            pathname.startsWith('/profile') || pathname === href
+          )
           const active = label === 'Profil'
             ? isProfileActive
             : pathname === href || (href !== '/dashboard' && href !== '/settings' && pathname.startsWith(href))

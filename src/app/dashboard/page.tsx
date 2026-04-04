@@ -40,15 +40,15 @@ export default async function DashboardPage() {
         <div className="max-w-lg mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-white">
+            <Link href="/feed" className="text-2xl font-bold text-white hover:opacity-80 transition">
               3l<span className="text-emerald-500">4</span>n
-            </h1>
+            </Link>
             <div className="flex items-center gap-3">
               <Link href="/settings" className="text-zinc-500 hover:text-white transition" title="Paramètres">
                 ⚙️
               </Link>
               <Link
-                href={`/profile/${session.user.id}`}
+                href={session.user.username ? `/${session.user.username}` : `/profile/${session.user.id}`}
                 className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition"
               >
                 {session.user.image ? (

@@ -48,6 +48,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           image: user.avatar,
           role: user.role,
           banned: user.banned,
+          username: user.username,
         }
       },
     }),
@@ -66,17 +67,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.image = user.image
         token.role = (user as { role?: string }).role
         token.banned = (user as { banned?: boolean }).banned
+        token.username = (user as { username?: string | null }).username
       }
       // Refresh role/banned/image from DB on each token refresh
       if (token.id && !user) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, banned: true, image: true, avatar: true },
+          select: { role: true, banned: true, image: true, avatar: true, username: true },
         })
         if (dbUser) {
           token.role = dbUser.role
           token.banned = dbUser.banned
           token.image = dbUser.image || dbUser.avatar
+          token.username = dbUser.username
         }
       }
       return token
@@ -87,6 +90,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.image = token.image as string
         session.user.role = token.role as 'USER' | 'ADMIN'
         session.user.banned = token.banned as boolean
+        session.user.username = token.username as string | null | undefined
       }
       return session
     },
