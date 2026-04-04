@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { upsertNotification } from '@/lib/notifications'
 import { auth } from '@/auth'
 
 // GET /api/posts/[id]/comments
@@ -31,6 +30,7 @@ export async function GET(
       author: user,
       likesCount: likes.length,
       likedByMe: currentUserId ? likes.some((l) => l.userId === currentUserId) : false,
+      imageUrl: rest.imageUrl ?? null,
     }))
 
     return NextResponse.json({ comments: normalized })
@@ -63,7 +63,7 @@ export async function POST(
     }
 
     const body = await req.json()
-    const { content } = body
+    const { content, imageUrl } = body
 
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
       return NextResponse.json({ error: 'Le commentaire est requis' }, { status: 400 })
@@ -73,6 +73,16 @@ export async function POST(
       return NextResponse.json({ error: 'Le commentaire ne doit pas dépasser 300 caractères' }, { status: 400 })
     }
 
+    // Validate imageUrl: must come from R2
+    let safeImageUrl: string | null = null
+    if (imageUrl && typeof imageUrl === 'string') {
+      const r2Base = process.env.R2_PUBLIC_URL?.replace(/\/$/, '')
+      if (!r2Base || !imageUrl.startsWith(r2Base + '/')) {
+        return NextResponse.json({ error: 'URL image invalide' }, { status: 400 })
+      }
+      safeImageUrl = imageUrl
+    }
+
     const trimmedContent = content.trim()
 
     const comment = await prisma.comment.create({
@@ -80,6 +90,7 @@ export async function POST(
         content: trimmedContent,
         userId: session.user.id,
         postId,
+        ...(safeImageUrl ? { imageUrl: safeImageUrl } : {}),
       },
       include: {
         user: {

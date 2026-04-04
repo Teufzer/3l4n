@@ -42,6 +42,7 @@ interface PostCardProps {
   post: Post
   currentUserId?: string
   isAdmin?: boolean
+  r2Enabled?: boolean
   onDeleted?: (postId: string) => void
   onUpdated?: (post: Post) => void
 }
@@ -71,7 +72,7 @@ function getInitials(name: string) {
     .slice(0, 2)
 }
 
-export default function PostCard({ post, currentUserId, isAdmin, onDeleted, onUpdated }: PostCardProps) {
+export default function PostCard({ post, currentUserId, isAdmin, r2Enabled = false, onDeleted, onUpdated }: PostCardProps) {
   const authorHref = (post.author as { username?: string }).username
     ? `/${(post.author as { username?: string }).username}`
     : `/profile/${post.author.id}`
@@ -390,7 +391,7 @@ export default function PostCard({ post, currentUserId, isAdmin, onDeleted, onUp
         </div>
 
         {/* Comments collapsed */}
-        <CommentSection postId={post.id} currentUserId={currentUserId} />
+        <CommentSection postId={post.id} currentUserId={currentUserId} r2Enabled={r2Enabled} />
       </article>
 
       {/* Lightbox modal */}

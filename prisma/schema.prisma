@@ -119,6 +119,7 @@ model Post {
 model Comment {
   id            String         @id @default(cuid())
   content       String
+  imageUrl      String?
   createdAt     DateTime       @default(now())
   userId        String
   postId        String

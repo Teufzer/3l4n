@@ -136,7 +136,7 @@ export default function Feed({ r2Enabled = false, userImage, userName }: FeedPro
         <>
           <div className="space-y-4">
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} currentUserId={currentUserId} isAdmin={isAdmin} onDeleted={handlePostDeleted} onUpdated={handlePostUpdated} />
+              <PostCard key={post.id} post={post} currentUserId={currentUserId} isAdmin={isAdmin} onDeleted={handlePostDeleted} onUpdated={handlePostUpdated} r2Enabled={r2Enabled} />
             ))}
           </div>
 

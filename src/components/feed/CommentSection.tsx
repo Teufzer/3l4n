@@ -16,6 +16,7 @@ interface CommentAuthor {
 interface Comment {
   id: string
   content: string
+  imageUrl?: string | null
   createdAt: string
   author: CommentAuthor
   likesCount: number
@@ -25,6 +26,7 @@ interface Comment {
 interface CommentSectionProps {
   postId: string
   currentUserId?: string
+  r2Enabled?: boolean
 }
 
 interface UserSuggestion {
@@ -108,6 +110,10 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
   const [loading, setLoading] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [text, setText] = useState('')
+  const [commentImage, setCommentImage] = useState<File | null>(null)
+  const [commentImagePreview, setCommentImagePreview] = useState<string | null>(null)
+  const [commentImageUrl, setCommentImageUrl] = useState<string | null>(null)
+  const [imageUploading, setImageUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [likingComment, setLikingComment] = useState<string | null>(null)
 
@@ -218,12 +224,15 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
       const res = await fetch(`/api/posts/${postId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: text.trim() }),
+        body: JSON.stringify({ content: text.trim(), imageUrl: commentImageUrl }),
       })
       if (!res.ok) throw new Error('Failed to post')
       const data = await res.json()
       setComments((prev) => [...prev, { ...data.comment, likesCount: 0, likedByMe: false }])
       setText('')
+    setCommentImage(null)
+    setCommentImagePreview(null)
+    setCommentImageUrl(null)
     } catch (err) {
       console.error(err)
     } finally {
@@ -383,9 +392,26 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
                   </div>
                 </div>
                 <CommentText content={comment.content} />
+                {comment.imageUrl && (
+                  <img
+                    src={comment.imageUrl}
+                    alt=""
+                    className="mt-1.5 max-h-48 rounded-xl object-cover border border-white/5 cursor-pointer hover:opacity-90 transition"
+                    onClick={() => window.open(comment.imageUrl!, '_blank')}
+                  />
+                )}
               </div>
             </div>
           ))}
+
+          {/* Preview image commentaire */}
+          {commentImagePreview && (
+            <div className="relative inline-block mx-2 mb-1">
+              <img src={commentImagePreview} alt="" className="max-h-20 rounded-xl border border-white/10" />
+              {imageUploading && <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-xl"><span className="text-xs text-white">⏳</span></div>}
+              {!imageUploading && <button type="button" onClick={() => { setCommentImage(null); setCommentImagePreview(null); setCommentImageUrl(null) }} className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center">✕</button>}
+            </div>
+          )}
 
           {/* Input form */}
           {currentUserId ? (
@@ -443,9 +469,39 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
                 )}
               </div>
 
+              {/* Bouton photo */}
+              <>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  className="hidden"
+                  id="comment-image-input"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    if (file.size > 5 * 1024 * 1024) { alert('Max 5MB'); return }
+                    setCommentImage(file)
+                    setCommentImagePreview(URL.createObjectURL(file))
+                    setImageUploading(true)
+                    try {
+                      const fd = new FormData(); fd.append('file', file)
+                      const r = await fetch('/api/upload', { method: 'POST', body: fd })
+                      if (r.ok) { const d = await r.json(); setCommentImageUrl(d.publicUrl) }
+                    } finally { setImageUploading(false) }
+                    e.target.value = ''
+                  }}
+                />
+                <label
+                  htmlFor="comment-image-input"
+                  className="flex-shrink-0 p-2 rounded-xl text-white/30 hover:text-white/60 hover:bg-white/5 transition cursor-pointer text-sm"
+                  title="Ajouter une photo"
+                >
+                  📷
+                </label>
+              </>
               <button
                 type="submit"
-                disabled={!text.trim() || submitting}
+                disabled={!text.trim() || submitting || imageUploading}
                 className="flex-shrink-0 px-3 py-2 rounded-xl bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/30 hover:bg-emerald-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-95"
               >
                 {submitting ? '…' : '→'}
