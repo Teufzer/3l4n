@@ -78,7 +78,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (dbUser) {
           token.role = dbUser.role
           token.banned = dbUser.banned
-          token.image = dbUser.image || dbUser.avatar
+          // Priorité à l'avatar R2 sur la photo Google
+          token.image = dbUser.avatar || dbUser.image
           token.username = dbUser.username
         }
       }

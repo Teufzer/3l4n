@@ -86,7 +86,7 @@ export default function Sidebar() {
       {/* User info en bas */}
       {user && (
         <Link href={profileHref} className="flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-white/5 transition mt-2">
-          {user.image ? (
+          {(user.image) ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.image} alt="avatar" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
           ) : (
