@@ -9,6 +9,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
   id            String        @id @default(cuid())
   email         String        @unique
@@ -22,12 +27,15 @@ model User {
   image         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+  role          Role          @default(USER)
+  banned        Boolean       @default(false)
   accounts      Account[]
   sessions      Session[]
   weightEntries WeightEntry[]
   posts         Post[]
   reactions     Reaction[]
   comments      Comment[]
+  reports       Report[]
 }
 
 model Account {
@@ -81,10 +89,12 @@ model Post {
   userId    String
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   content   String
+  imageUrl  String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   reactions Reaction[]
   comments  Comment[]
+  reports   Report[]
 }
 
 model Comment {
@@ -95,6 +105,20 @@ model Comment {
   postId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  reports   Report[]
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  reason     String
+  createdAt  DateTime @default(now())
+  reporterId String
+  postId     String?
+  commentId  String?
+  resolved   Boolean  @default(false)
+  reporter   User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  post       Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment    Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 }
 
 model Reaction {
