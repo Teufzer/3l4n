@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import DashboardClient from './DashboardClient'
 import OnboardingModal from '@/components/OnboardingModal'
 import UsernameOnboardingModal from '@/components/UsernameOnboardingModal'
+import EmailVerificationBanner from '@/components/EmailVerificationBanner'
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -21,7 +22,7 @@ export default async function DashboardPage() {
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { targetWeight: true, startWeight: true, username: true, accounts: { select: { provider: true } } },
+      select: { targetWeight: true, startWeight: true, username: true, emailVerified: true, accounts: { select: { provider: true } } },
     }),
     prisma.weightEntry.count({ where: { userId: session.user.id } }),
   ])
@@ -36,6 +37,7 @@ export default async function DashboardPage() {
   const needsOnboarding = weightCount === 0
   const isGoogleUser = user?.accounts?.some((a) => a.provider === 'google') ?? false
   const needsUsername = !user?.username // tout le monde doit avoir un @username
+  const showEmailBanner = !isGoogleUser && !user?.emailVerified
 
   return (
     <>
@@ -93,6 +95,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {showEmailBanner && <EmailVerificationBanner />}
       {needsUsername && <UsernameOnboardingModal userName={session.user?.name} />}
       {!needsUsername && needsOnboarding && <OnboardingModal userName={session.user?.name} />}
     </>

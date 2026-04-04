@@ -8,6 +8,8 @@ declare module 'next-auth' {
       banned: boolean
       verified?: boolean
       username?: string | null
+      emailVerified?: Date | null
+      isCredentialsUser?: boolean
     } & DefaultSession['user']
   }
 }

@@ -49,6 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role: user.role,
           banned: user.banned,
           username: user.username,
+          isCredentialsUser: true,
         }
       },
     }),
@@ -68,12 +69,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = (user as { role?: string }).role
         token.banned = (user as { banned?: boolean }).banned
         token.username = (user as { username?: string | null }).username
+        token.isCredentialsUser = (user as { isCredentialsUser?: boolean }).isCredentialsUser ?? false
       }
       // Refresh role/banned/image from DB on each token refresh
       if (token.id && !user) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, banned: true, image: true, avatar: true, username: true, verified: true },
+          select: { role: true, banned: true, image: true, avatar: true, username: true, verified: true, emailVerified: true, accounts: { select: { provider: true } } },
         })
         if (dbUser) {
           token.role = dbUser.role
@@ -82,6 +84,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.image = dbUser.avatar || null
           token.username = dbUser.username
           token.verified = dbUser.verified
+          token.emailVerified = dbUser.emailVerified
+          token.isCredentialsUser = dbUser.accounts.length === 0 || !dbUser.accounts.some((a: { provider: string }) => a.provider === 'google')
         }
       }
       return token
@@ -94,6 +98,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.banned = token.banned as boolean
         session.user.username = token.username as string | null | undefined
         session.user.verified = token.verified as boolean
+        session.user.emailVerified = (token.emailVerified as Date | null | undefined) ?? null
+        session.user.isCredentialsUser = token.isCredentialsUser as boolean | undefined
       }
       return session
     },

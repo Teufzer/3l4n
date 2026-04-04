@@ -45,6 +45,8 @@ model User {
   following            Follow[]        @relation("Following")
   blockedBy            Block[]         @relation("Blocked")
   blocking             Block[]         @relation("Blocker")
+  emailVerifications   EmailVerification[]
+  passwordResets       PasswordReset[]
 }
 
 model Account {
@@ -188,6 +190,24 @@ model Block {
   blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
 
   @@unique([blockerId, blockedId])
+}
+
+model EmailVerification {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  token     String   @unique @default(cuid())
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique @default(cuid())
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum ReactionType {

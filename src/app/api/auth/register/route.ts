@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { rateLimit } from '@/lib/rateLimit'
+import { sendVerificationEmail } from '@/lib/email'
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/
 
@@ -71,6 +72,16 @@ export async function POST(req: NextRequest) {
         ...(username ? { username: username.toLowerCase() } : {}),
       },
     })
+
+    // Create email verification token
+    const verification = await prisma.emailVerification.create({
+      data: { userId: user.id },
+    })
+
+    // Send verification email (non-blocking — don't fail registration if email fails)
+    sendVerificationEmail(user.email, verification.token).catch((err) =>
+      console.error('Failed to send verification email:', err)
+    )
 
     return NextResponse.json(
       {
