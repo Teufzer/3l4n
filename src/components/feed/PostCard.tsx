@@ -33,6 +33,9 @@ export interface Post {
   commentsCount?: number
   repostsCount?: number
   repostedByMe?: boolean
+  isRepost?: boolean
+  reposterId?: string | null
+  repostedAt?: string | null
 }
 
 interface PostCardProps {

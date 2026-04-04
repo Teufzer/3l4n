@@ -33,9 +33,50 @@ function imcCategory(imc: number): { label: string; color: string; bg: string; b
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+// ─── Import helpers ──────────────────────────────────────────────────────────
+
+interface ParsedImportEntry {
+  weight: number
+  date: string
+  note?: string
+}
+
+function parseImportText(text: string): { entries: ParsedImportEntry[]; errors: string[] } {
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
+  const entries: ParsedImportEntry[] = []
+  const errors: string[] = []
+
+  for (const line of lines) {
+    // Format: YYYY-MM-DD : poids (note optionnelle)
+    const match = line.match(/^(\d{4}-\d{2}-\d{2})\s*:\s*([\d.,]+)(?:\s*\(([^)]+)\))?/)
+    if (!match) {
+      errors.push(`Ligne non reconnue : "${line}"`)
+      continue
+    }
+    const date = match[1]
+    const weight = parseFloat(match[2].replace(',', '.'))
+    const note = match[3]?.trim() || undefined
+    if (isNaN(weight) || weight <= 0) {
+      errors.push(`Poids invalide sur la ligne : "${line}"`)
+      continue
+    }
+    entries.push({ date, weight, note })
+  }
+
+  return { entries, errors }
+}
+
 export default function DashboardClient({ initialEntries, targetWeight, startWeight, height }: DashboardClientProps) {
   const [entries, setEntries] = useState<EntryWithId[]>(initialEntries)
   const [showForm, setShowForm] = useState(false)
+
+  // Import state
+  const [showImport, setShowImport] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importParsed, setImportParsed] = useState<ParsedImportEntry[] | null>(null)
+  const [importErrors, setImportErrors] = useState<string[]>([])
+  const [importLoading, setImportLoading] = useState(false)
+  const [importToast, setImportToast] = useState<string | null>(null)
 
   // Edit state
   const [editEntry, setEditEntry] = useState<EntryWithId | null>(null)
@@ -49,6 +90,10 @@ export default function DashboardClient({ initialEntries, targetWeight, startWei
   const [deleteEntry, setDeleteEntry] = useState<EntryWithId | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
+  const [showPostSuggestion, setShowPostSuggestion] = useState(false)
+  const [suggestedPostText, setSuggestedPostText] = useState("")
+  const [postingWeight, setPostingWeight] = useState(false)
+
   const handleSuccess = useCallback(
     (entry: { id: string; weight: number; date: string; note?: string | null }) => {
       setEntries((prev) => {
@@ -60,10 +105,62 @@ export default function DashboardClient({ initialEntries, targetWeight, startWei
           (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
         )
       })
-      setTimeout(() => setShowForm(false), 1500)
+      // Calculate delta for suggestion
+      const startW = startWeight ?? (entries.length > 0 ? entries[0].weight : entry.weight)
+      const delta = entry.weight - startW
+      const deltaStr = delta < 0 ? `-${Math.abs(delta).toFixed(1)}` : `+${delta.toFixed(1)}`
+      const msg = `${entry.weight} kg aujourd'hui${delta !== 0 ? ` — ${deltaStr} kg depuis le départ 💪` : ''}`
+      setSuggestedPostText(msg)
+      setShowPostSuggestion(true)
+      setTimeout(() => setShowForm(false), 500)
     },
-    []
+    [startWeight]
   )
+
+  // Parse import text as preview
+  const handleImportPreview = () => {
+    const { entries: parsed, errors } = parseImportText(importText)
+    setImportParsed(parsed)
+    setImportErrors(errors)
+  }
+
+  // Submit import
+  const handleImportSubmit = async () => {
+    if (!importParsed || importParsed.length === 0) return
+    setImportLoading(true)
+    try {
+      const res = await fetch('/api/weight/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries: importParsed }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur')
+      // Refresh entries from API
+      const refreshRes = await fetch('/api/weight')
+      if (refreshRes.ok) {
+        const refreshData = await refreshRes.json()
+        setEntries(
+          (refreshData.entries ?? []).map((e: { id: string; weight: number; date: string; note?: string | null }) => ({
+            id: e.id,
+            weight: e.weight,
+            date: new Date(e.date).toISOString(),
+            note: e.note,
+          }))
+        )
+      }
+      setImportToast(`✅ ${data.imported} pesée${data.imported > 1 ? 's' : ''} importée${data.imported > 1 ? 's' : ''}${data.skipped > 0 ? ` · ${data.skipped} ignorée${data.skipped > 1 ? 's' : ''} (déjà existantes)` : ''}`)
+      setShowImport(false)
+      setImportText('')
+      setImportParsed(null)
+      setImportErrors([])
+      setTimeout(() => setImportToast(null), 5000)
+    } catch (err) {
+      setImportErrors([err instanceof Error ? err.message : 'Erreur inconnue'])
+    } finally {
+      setImportLoading(false)
+    }
+  }
 
   // Open edit modal
   const openEdit = (entry: EntryWithId) => {
@@ -139,7 +236,15 @@ export default function DashboardClient({ initialEntries, targetWeight, startWei
   const recentEntries = [...entries].reverse().slice(0, 10)
 
   return (
+    <>
     <div className="space-y-4">
+      {/* Toast notification */}
+      {importToast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-[#1a1a1a] border border-emerald-500/40 text-emerald-400 text-sm px-4 py-3 rounded-xl shadow-xl max-w-xs text-center" style={{ animation: 'slideUp 0.25s ease-out' }}>
+          {importToast}
+        </div>
+      )}
+
       {/* Hero stats + CTA button */}
       <WeightStats
         data={entries}
@@ -148,6 +253,15 @@ export default function DashboardClient({ initialEntries, targetWeight, startWei
         goal={targetWeight ?? undefined}
         onAddWeight={() => setShowForm(true)}
       />
+
+      {/* Import button */}
+      <button
+        onClick={() => setShowImport(true)}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-white/40 hover:text-white/70 hover:border-white/20 text-sm transition"
+      >
+        <span>📅</span>
+        <span>Importer des pesées passées</span>
+      </button>
 
       {/* IMC Card */}
       {imc !== null && imcInfo !== null && (
@@ -375,6 +489,150 @@ export default function DashboardClient({ initialEntries, targetWeight, startWei
           </div>
         </div>
       )}
+
+      {/* Import modal */}
+      {showImport && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm px-4 pb-6 sm:pb-0"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowImport(false)
+              setImportParsed(null)
+              setImportErrors([])
+            }
+          }}
+        >
+          <div className="w-full max-w-md bg-[#1a1a1a] border border-white/10 rounded-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto" style={{ animation: 'slideUp 0.25s ease-out' }}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-white">📅 Importer des pesées passées</h2>
+              <button
+                onClick={() => { setShowImport(false); setImportParsed(null); setImportErrors([]) }}
+                className="text-white/30 hover:text-white transition text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div>
+              <p className="text-xs text-white/40 mb-1.5">Format attendu (une ligne par pesée) :</p>
+              <pre className="text-xs text-emerald-400/70 bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-3 py-2 whitespace-pre font-mono">{`2026-01-15 : 95.2\n2026-01-16 : 94.8 (lendemain de fête)\n2026-01-20 : 94.1`}</pre>
+            </div>
+
+            <textarea
+              value={importText}
+              onChange={(e) => { setImportText(e.target.value); setImportParsed(null); setImportErrors([]) }}
+              rows={6}
+              placeholder={`2026-01-15 : 95.2\n2026-01-16 : 94.8 (note optionnelle)`}
+              className="w-full bg-[#111] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white/80 placeholder-white/20 resize-none focus:outline-none focus:border-emerald-500/50 transition font-mono"
+            />
+
+            {importErrors.length > 0 && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2 space-y-1">
+                {importErrors.map((err, i) => (
+                  <p key={i} className="text-xs text-red-400">{err}</p>
+                ))}
+              </div>
+            )}
+
+            {importParsed !== null && importParsed.length > 0 && (
+              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl overflow-hidden">
+                <p className="text-xs text-emerald-400 px-3 pt-2.5 pb-1 font-semibold">
+                  {importParsed.length} pesée{importParsed.length > 1 ? 's' : ''} à importer
+                </p>
+                <div className="divide-y divide-white/5 max-h-48 overflow-y-auto">
+                  {importParsed.map((e, i) => (
+                    <div key={i} className="px-3 py-2 flex items-center gap-2">
+                      <span className="text-xs text-white/60 font-mono">{e.date}</span>
+                      <span className="text-xs text-white font-semibold">{e.weight} kg</span>
+                      {e.note && <span className="text-xs text-white/40 truncate">{e.note}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {importParsed !== null && importParsed.length === 0 && importErrors.length === 0 && (
+              <p className="text-xs text-white/30 text-center py-2">Aucune entrée reconnue dans le texte.</p>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => { setShowImport(false); setImportParsed(null); setImportErrors([]) }}
+                className="flex-1 py-3 rounded-xl border border-white/10 text-white/50 hover:text-white text-sm transition"
+              >
+                Annuler
+              </button>
+              {importParsed === null ? (
+                <button
+                  onClick={handleImportPreview}
+                  disabled={!importText.trim()}
+                  className="flex-1 py-3 rounded-xl bg-white/10 hover:bg-white/15 disabled:opacity-40 text-white font-semibold text-sm transition"
+                >
+                  Prévisualiser
+                </button>
+              ) : (
+                <button
+                  onClick={handleImportSubmit}
+                  disabled={importLoading || importParsed.length === 0}
+                  className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-bold text-sm transition"
+                >
+                  {importLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-3.5 h-3.5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                      Import...
+                    </span>
+                  ) : (
+                    `Importer ${importParsed.length} pesée${importParsed.length > 1 ? 's' : ''}`
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal suggestion de post après pesée */}
+      {showPostSuggestion && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm px-4 pb-6 sm:pb-0"
+          onClick={() => setShowPostSuggestion(false)}>
+          <div className="w-full max-w-md bg-[#1a1a1a] border border-white/10 rounded-2xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
+            <div>
+              <h3 className="text-white font-bold text-base">Partage ta progression 💪</h3>
+              <p className="text-white/40 text-sm mt-0.5">Laisse la communauté te soutenir !</p>
+            </div>
+            <textarea
+              value={suggestedPostText}
+              onChange={e => setSuggestedPostText(e.target.value)}
+              rows={3}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition resize-none"
+              maxLength={500}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowPostSuggestion(false)}
+                className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 text-sm hover:bg-white/5 transition"
+              >
+                Passer
+              </button>
+              <button
+                disabled={postingWeight || !suggestedPostText.trim()}
+                onClick={async () => {
+                  if (!suggestedPostText.trim()) return
+                  setPostingWeight(true)
+                  try {
+                    await fetch('/api/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: suggestedPostText }) })
+                    setShowPostSuggestion(false)
+                  } finally { setPostingWeight(false) }
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-sm transition disabled:opacity-50"
+              >
+                {postingWeight ? 'Publication…' : 'Publier'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    </>
   )
 }

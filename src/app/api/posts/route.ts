@@ -43,11 +43,83 @@ export async function GET(req: NextRequest) {
       followedUserIds = follows.map((f) => f.followingId)
     }
 
+    // When fetching a user's profile posts, also include posts they reposted
+    if (userId) {
+      // Fetch own posts
+      const ownPosts = await prisma.post.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        where: { userId, user: { banned: false } },
+        include: {
+          user: {
+            select: { id: true, name: true, username: true, avatar: true, image: true, verified: true },
+          },
+          reactions: { select: { id: true, type: true, userId: true } },
+          _count: { select: { comments: true, reposts: true } },
+          reposts: { select: { userId: true } },
+        },
+      })
+
+      // Fetch reposts by this user (excluding posts from banned users)
+      const userReposts = await prisma.repost.findMany({
+        where: { userId, post: { user: { banned: false } } },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        include: {
+          post: {
+            include: {
+              user: {
+                select: { id: true, name: true, username: true, avatar: true, image: true, verified: true },
+              },
+              reactions: { select: { id: true, type: true, userId: true } },
+              _count: { select: { comments: true, reposts: true } },
+              reposts: { select: { userId: true } },
+            },
+          },
+        },
+      })
+
+      const normalizedOwn = ownPosts.map(({ user, reposts, _count, ...rest }) => ({
+        ...rest,
+        author: user,
+        repostsCount: reposts.length,
+        repostedByMe: currentUserId ? reposts.some((r) => r.userId === currentUserId) : false,
+        commentsCount: _count?.comments ?? 0,
+        isRepost: false as const,
+        reposterId: null as string | null,
+        repostedAt: null as string | null,
+      }))
+
+      const normalizedReposts = userReposts
+        .map(({ post, createdAt, userId: reposterId }) => {
+          const { user, reposts, _count, ...rest } = post
+          return {
+            ...rest,
+            author: user,
+            repostsCount: reposts.length,
+            repostedByMe: currentUserId ? reposts.some((r) => r.userId === currentUserId) : false,
+            commentsCount: _count?.comments ?? 0,
+            isRepost: true as const,
+            reposterId,
+            repostedAt: createdAt.toISOString(),
+          }
+        })
+
+      // Merge and sort by createdAt (posts) / repostedAt (reposts) descending
+      const merged = [...normalizedOwn, ...normalizedReposts]
+        .sort((a, b) => {
+          const dateA = a.isRepost ? new Date(a.repostedAt!).getTime() : new Date(a.createdAt).getTime()
+          const dateB = b.isRepost ? new Date(b.repostedAt!).getTime() : new Date(b.createdAt).getTime()
+          return dateB - dateA
+        })
+        .slice(0, limit)
+
+      return NextResponse.json({ posts: merged, page, limit })
+    }
+
     const whereClause = {
       user: { banned: false },
-      ...(userId
-        ? { userId }
-        : blockedUserIds.length > 0
+      ...(blockedUserIds.length > 0
         ? { userId: { notIn: blockedUserIds } }
         : {}),
     }

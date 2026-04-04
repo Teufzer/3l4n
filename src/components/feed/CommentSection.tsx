@@ -293,7 +293,7 @@ export default function CommentSection({ postId, currentUserId }: CommentSection
             <div key={comment.id} className="flex gap-2.5 items-start">
               <Avatar author={comment.author} size="xs" />
               <div className="flex-1 min-w-0 bg-white/5 rounded-xl px-3 py-2">
-                <div className="flex items-baseline gap-2 mb-0.5">
+                <div className="flex items-center gap-2 mb-0.5">
                   <span className="flex items-center gap-1">
                     <span className="text-white/80 text-xs font-semibold">{comment.author.name}</span>
                     {comment.author.verified && <VerifiedBadge className="w-3.5 h-3.5" />}

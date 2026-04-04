@@ -411,13 +411,20 @@ export default function ProfileContent({
               </div>
             ) : (
               posts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  currentUserId={session?.user?.id}
-                  onDeleted={handlePostDeleted}
-                  onUpdated={handlePostUpdated}
-                />
+                <div key={`${post.isRepost ? 'repost' : 'post'}-${post.id}-${post.repostedAt ?? post.createdAt}`}>
+                  {post.isRepost && (
+                    <div className="flex items-center gap-1.5 px-1 pb-1.5 text-xs text-zinc-500">
+                      <span>🔄</span>
+                      <span>A reposté</span>
+                    </div>
+                  )}
+                  <PostCard
+                    post={post}
+                    currentUserId={session?.user?.id}
+                    onDeleted={handlePostDeleted}
+                    onUpdated={handlePostUpdated}
+                  />
+                </div>
               ))
             )}
           </div>

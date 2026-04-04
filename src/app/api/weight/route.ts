@@ -55,6 +55,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'La note ne doit pas dépasser 500 caractères' }, { status: 400 })
   }
 
+  // Vérifier qu'il n'y a pas déjà une pesée ce jour calendaire
+  const targetDate = date ? new Date(date) : new Date()
+  const dayStart = new Date(targetDate)
+  dayStart.setHours(0, 0, 0, 0)
+  const dayEnd = new Date(targetDate)
+  dayEnd.setHours(23, 59, 59, 999)
+
+  const existing = await prisma.weightEntry.findFirst({
+    where: {
+      userId,
+      date: { gte: dayStart, lte: dayEnd },
+    },
+  })
+
+  if (existing) {
+    return NextResponse.json(
+      { error: "Tu as déjà enregistré une pesée aujourd'hui. Modifie-la si besoin." },
+      { status: 409 }
+    )
+  }
+
   const entry = await prisma.weightEntry.create({
     data: {
       userId,
