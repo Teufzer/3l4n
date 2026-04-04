@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
       include: {
         user: {
-          select: { id: true, name: true, avatar: true },
+          select: { id: true, name: true, avatar: true, image: true },
         },
         reactions: {
           select: { id: true, type: true, userId: true },
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
       },
       include: {
         user: {
-          select: { id: true, name: true, avatar: true },
+          select: { id: true, name: true, avatar: true, image: true },
         },
         reactions: {
           select: { id: true, type: true, userId: true },

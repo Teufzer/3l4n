@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import CommentSection from './CommentSection'
 
 export type ReactionType = 'COURAGE' | 'EN_FEU' | 'SOLIDAIRE'
 
@@ -18,6 +19,7 @@ export interface Post {
     id: string
     name: string
     avatar?: string | null
+    image?: string | null
   }
   reactions: Reaction[]
 }
@@ -87,9 +89,9 @@ export default function PostCard({ post, currentUserId }: PostCardProps) {
     <article className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-4 space-y-3 hover:border-white/10 transition-colors">
       {/* Header */}
       <div className="flex items-center gap-3">
-        {post.author.avatar ? (
+        {(post.author.image || post.author.avatar) ? (
           <img
-            src={post.author.avatar}
+            src={(post.author.image || post.author.avatar)!}
             alt={post.author.name}
             className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/30"
           />
@@ -108,7 +110,7 @@ export default function PostCard({ post, currentUserId }: PostCardProps) {
       <p className="text-white/80 text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
 
       {/* Reactions */}
-      <div className="flex gap-2 pt-1">
+      <div className="flex gap-2 pt-1 flex-wrap">
         {REACTIONS.map(({ type, emoji, label }) => {
           const count = countByType(type)
           const reacted = hasReacted(type)
@@ -132,6 +134,9 @@ export default function PostCard({ post, currentUserId }: PostCardProps) {
           )
         })}
       </div>
+
+      {/* Comments */}
+      <CommentSection postId={post.id} currentUserId={currentUserId} />
     </article>
   )
 }

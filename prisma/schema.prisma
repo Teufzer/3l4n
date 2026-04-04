@@ -27,6 +27,7 @@ model User {
   weightEntries WeightEntry[]
   posts         Post[]
   reactions     Reaction[]
+  comments      Comment[]
 }
 
 model Account {
@@ -83,6 +84,17 @@ model Post {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   reactions Reaction[]
+  comments  Comment[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 }
 
 model Reaction {
