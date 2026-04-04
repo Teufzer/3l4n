@@ -4,6 +4,7 @@ import "./globals.css";
 import BottomNavWrapper from "@/components/BottomNavWrapper";
 import { Toaster } from "sonner";
 import Providers from "@/components/Providers";
+import Sidebar from "@/components/Sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,10 +31,19 @@ export default function RootLayout({
       lang="fr"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#0f0f0f] text-white">
+      <body className="min-h-full bg-[#0f0f0f] text-white">
         <Providers>
-        <main className="flex-1">{children}</main>
-        <BottomNavWrapper />
+          <div className="flex min-h-screen">
+            <Sidebar />
+            <div className="flex-1 lg:ml-20 xl:ml-64 flex flex-col">
+              <main className="flex-1">
+                <div className="max-w-[600px] mx-auto lg:border-x lg:border-white/5 min-h-screen">
+                  {children}
+                </div>
+              </main>
+              <BottomNavWrapper />
+            </div>
+          </div>
         </Providers>
         <Toaster
           position="top-center"
