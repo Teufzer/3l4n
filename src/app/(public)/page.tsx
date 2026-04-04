@@ -26,22 +26,25 @@ export default async function Home() {
       <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         <div className="max-w-lg">
 
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 text-emerald-400 text-sm mb-8">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Réseau social de suivi de poids
-          </div>
-
-          {/* Titre */}
-          <h1 className="text-5xl sm:text-6xl font-black leading-tight mb-6">
-            Perdre du poids,{' '}
-            <span className="text-emerald-400">ensemble</span>.
+          {/* Logo géant */}
+          <h1 className="text-8xl sm:text-9xl font-black tracking-tight mb-4">
+            3l<span className="text-emerald-400">4</span>n
           </h1>
 
+          {/* Explication */}
+          <p className="text-white/40 text-base mb-3">
+            <span className="text-white/70">3</span>l<span className="text-white/70">4</span>n = <span className="text-emerald-400 font-semibold">élan</span>
+          </p>
+
+          {/* Accroche */}
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+            Perdre du poids,{' '}
+            <span className="text-emerald-400">ensemble</span>.
+          </h2>
+
           {/* Sous-titre */}
-          <p className="text-white/50 text-lg leading-relaxed mb-10 max-w-md mx-auto">
-            Suis ta progression, partage tes victoires, trouve du soutien.
-            Sans jugement.
+          <p className="text-white/50 text-base leading-relaxed mb-10 max-w-sm mx-auto">
+            Suis ta progression, partage tes victoires, trouve du soutien. Sans jugement.
           </p>
 
           {/* CTA */}
