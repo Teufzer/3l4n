@@ -31,15 +31,8 @@ export default async function Home() {
             3l<span className="text-emerald-400">4</span>n
           </h1>
 
-          {/* Equation */}
-          <p className="text-white/40 text-lg mb-6 tracking-wide">
-            3l<span className="text-emerald-400">4</span>n
-            <span className="mx-2 text-white/20">=</span>
-            <span className="text-emerald-400 font-semibold">élan</span>
-          </p>
-
           {/* Accroche */}
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 mt-4">
             Ton élan commence ici.
           </h2>
 
