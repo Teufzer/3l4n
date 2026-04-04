@@ -1,6 +1,7 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import Feed from '@/components/feed/Feed'
 
 export default async function FeedPage() {
   const session = await auth()
@@ -10,27 +11,32 @@ export default async function FeedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] px-4 py-8">
-      <div className="max-w-lg mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold text-white">
+    <div className="min-h-screen bg-[#0f0f0f]">
+      {/* Top bar */}
+      <header className="sticky top-0 z-20 bg-[#0f0f0f]/80 backdrop-blur-md border-b border-white/5 px-4 py-3">
+        <div className="max-w-xl mx-auto flex items-center justify-between">
+          <h1 className="text-xl font-bold text-white">
             3l<span className="text-emerald-500">4</span>n
           </h1>
           <Link
             href={`/profile/${session.user?.id}`}
-            className="text-sm text-zinc-400 hover:text-white transition"
+            className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition"
           >
-            {session.user?.name}
+            <div className="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold ring-1 ring-emerald-500/30">
+              {(session.user?.name ?? 'M')
+                .split(' ')
+                .map((w) => w[0])
+                .join('')
+                .toUpperCase()
+                .slice(0, 2)}
+            </div>
+            <span className="hidden sm:block">{session.user?.name}</span>
           </Link>
         </div>
+      </header>
 
-        <div className="bg-[#1a1a1a] rounded-2xl p-6 border border-zinc-800 text-center">
-          <p className="text-zinc-400 text-sm">Le feed arrive bientôt 🌱</p>
-          <p className="text-zinc-600 text-xs mt-2">
-            Cette section est en cours de construction.
-          </p>
-        </div>
-      </div>
+      {/* Feed */}
+      <Feed />
     </div>
   )
 }

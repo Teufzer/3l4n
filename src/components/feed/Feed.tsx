@@ -107,9 +107,19 @@ export default function Feed() {
           </button>
         </div>
       ) : posts.length === 0 ? (
-        <div className="text-center py-16 space-y-3">
-          <p className="text-4xl">👥</p>
-          <p className="text-white/50 text-sm">Pas encore de posts. Soyez le premier !</p>
+        <div className="text-center py-16 space-y-4">
+          <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
+            <span className="text-3xl">🌱</span>
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-white font-semibold">Sois le premier à partager ta progression !</p>
+            <p className="text-white/40 text-sm max-w-xs mx-auto">
+              La communauté attend tes premiers pas. Partage tes ressentis, tes victoires, ton parcours.
+            </p>
+          </div>
+          {currentUserId && (
+            <p className="text-emerald-400 text-sm animate-bounce">↑ Écris quelque chose ci-dessus</p>
+          )}
         </div>
       ) : (
         <>
