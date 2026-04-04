@@ -51,9 +51,14 @@ export default async function DashboardPage() {
                 href={`/profile/${session.user.id}`}
                 className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition"
               >
-                <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-semibold text-xs">
-                  {(session.user.name || session.user.email || 'U')[0].toUpperCase()}
-                </span>
+                {session.user.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={session.user.image} alt="avatar" className="w-8 h-8 rounded-full object-cover ring-1 ring-emerald-500/30" />
+                ) : (
+                  <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-semibold text-xs">
+                    {(session.user.name || session.user.email || 'U')[0].toUpperCase()}
+                  </span>
+                )}
               </Link>
             </div>
           </div>
@@ -72,7 +77,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* Dashboard client (stats + chart + form) */}
-          <DashboardClient initialEntries={entries} targetWeight={user?.targetWeight ?? null} />
+          <DashboardClient initialEntries={entries} targetWeight={user?.targetWeight ?? null} startWeight={user?.startWeight ?? null} />
 
           {/* Feed link */}
           <Link

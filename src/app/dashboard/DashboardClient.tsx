@@ -8,9 +8,11 @@ import WeightForm from '@/components/weight/WeightForm'
 interface DashboardClientProps {
   initialEntries: WeightDataPoint[]
   targetWeight?: number | null
+  startWeight?: number | null
+  userImage?: string | null
 }
 
-export default function DashboardClient({ initialEntries, targetWeight }: DashboardClientProps) {
+export default function DashboardClient({ initialEntries, targetWeight, startWeight, userImage }: DashboardClientProps) {
   const [entries, setEntries] = useState<WeightDataPoint[]>(initialEntries)
   const [showForm, setShowForm] = useState(false)
 
@@ -37,7 +39,7 @@ export default function DashboardClient({ initialEntries, targetWeight }: Dashbo
   return (
     <div className="space-y-4">
       {/* Stats row */}
-      <WeightStats data={entries} />
+      <WeightStats data={entries} startWeight={startWeight ?? undefined} targetWeight={targetWeight ?? undefined} goal={targetWeight ?? undefined} />
 
       {/* CTA button */}
       <button
