@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
         where: { userId, user: { banned: false } },
         include: {
           user: {
-            select: { id: true, name: true, username: true, avatar: true, image: true, verified: true },
+            select: { id: true, name: true, username: true, avatar: true, image: true, verified: true, banned: true },
           },
           reactions: { select: { id: true, type: true, userId: true } },
           _count: { select: { comments: true, reposts: true } },
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
           post: {
             include: {
               user: {
-                select: { id: true, name: true, username: true, avatar: true, image: true, verified: true },
+                select: { id: true, name: true, username: true, avatar: true, image: true, verified: true, banned: true },
               },
               reactions: { select: { id: true, type: true, userId: true } },
               _count: { select: { comments: true, reposts: true } },
@@ -135,7 +135,7 @@ export async function GET(req: NextRequest) {
         where: whereClause,
         include: {
           user: {
-            select: { id: true, name: true, username: true, avatar: true, image: true, verified: true },
+            select: { id: true, name: true, username: true, avatar: true, image: true, verified: true, banned: true },
           },
           reactions: {
             select: { id: true, type: true, userId: true },
@@ -167,7 +167,7 @@ export async function GET(req: NextRequest) {
       where: whereClause,
       include: {
         user: {
-          select: { id: true, name: true, username: true, avatar: true, image: true, verified: true },
+          select: { id: true, name: true, username: true, avatar: true, image: true, verified: true, banned: true },
         },
         reactions: {
           select: { id: true, type: true, userId: true },
@@ -243,7 +243,7 @@ export async function POST(req: NextRequest) {
       },
       include: {
         user: {
-          select: { id: true, name: true, username: true, avatar: true, image: true, verified: true },
+          select: { id: true, name: true, username: true, avatar: true, image: true, verified: true, banned: true },
         },
         reactions: {
           select: { id: true, type: true, userId: true },
