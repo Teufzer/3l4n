@@ -1,10 +1,9 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { useState, useEffect } from 'react'
 import VerifiedBadge from '@/components/VerifiedBadge'
 
 const navItems = [
