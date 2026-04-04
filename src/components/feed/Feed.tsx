@@ -68,11 +68,7 @@ export default function Feed({ r2Enabled = false, userImage, userName }: FeedPro
 
   return (
     <div className="max-w-xl mx-auto w-full px-4 py-6 space-y-4 pb-24">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-white text-2xl font-bold tracking-tight">Communauté</h1>
-        <p className="text-white/40 text-sm">Partagez, encouragez, progressez ensemble</p>
-      </div>
+
 
       {/* Post form — only if logged in */}
       {currentUserId ? (

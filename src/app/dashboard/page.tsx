@@ -43,9 +43,7 @@ export default async function DashboardPage() {
         <div className="max-w-lg mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <Link href="/feed" className="text-2xl font-bold text-white hover:opacity-80 transition">
-              3l<span className="text-emerald-500">4</span>n
-            </Link>
+            <h1 className="text-xl font-bold text-white">Dashboard</h1>
             <div className="flex items-center gap-3">
               <Link href="/settings" className="text-zinc-500 hover:text-white transition" title="Paramètres">
                 ⚙️
