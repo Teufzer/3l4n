@@ -32,6 +32,8 @@ interface Author {
 interface SharedPost {
   id: string
   content: string
+  originalContent?: string | null
+  editedAt?: string | null
   imageUrl?: string | null
   createdAt: string
   author: Author
@@ -73,6 +75,7 @@ export default function SharedPostView({ post, currentUserId }: Props) {
   const [reactions, setReactions] = useState<Reaction[]>(post.reactions)
   const [loading, setLoading] = useState<ReactionType | null>(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [showOriginal, setShowOriginal] = useState(false)
 
   const countByType = (type: ReactionType) => reactions.filter((r) => r.type === type).length
   const hasReacted = (type: ReactionType) =>
@@ -179,7 +182,24 @@ export default function SharedPostView({ post, currentUserId }: Props) {
           </div>
 
           {/* Content */}
-          <p className="text-white/85 text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
+          <div className="space-y-1">
+            <p className="text-white/85 text-sm leading-relaxed whitespace-pre-wrap">
+              {showOriginal ? post.originalContent : post.content}
+            </p>
+            {post.editedAt && (
+              <div className="flex items-center gap-2">
+                <span className="text-white/30 text-xs">✏️ modifié</span>
+                {post.originalContent && (
+                  <button
+                    onClick={() => setShowOriginal((v) => !v)}
+                    className="text-xs text-white/30 hover:text-emerald-400 underline underline-offset-2 transition-colors"
+                  >
+                    {showOriginal ? 'voir actuel' : 'voir original'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Image */}
           {post.imageUrl && (

@@ -86,16 +86,18 @@ model WeightEntry {
 }
 
 model Post {
-  id        String     @id @default(cuid())
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content   String
-  imageUrl  String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  reactions Reaction[]
-  comments  Comment[]
-  reports   Report[]
+  id              String     @id @default(cuid())
+  userId          String
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content         String
+  originalContent String?
+  imageUrl        String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  editedAt        DateTime?
+  reactions       Reaction[]
+  comments        Comment[]
+  reports         Report[]
 }
 
 model Comment {

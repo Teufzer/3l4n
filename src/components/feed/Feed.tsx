@@ -58,6 +58,14 @@ export default function Feed({ r2Enabled = false, userImage, userName }: FeedPro
     fetchPosts(1, true)
   }
 
+  const handlePostDeleted = (postId: string) => {
+    setPosts((prev) => prev.filter((p) => p.id !== postId))
+  }
+
+  const handlePostUpdated = (updated: Post) => {
+    setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+  }
+
   return (
     <div className="max-w-xl mx-auto w-full px-4 py-6 space-y-4 pb-24">
       {/* Header */}
@@ -131,7 +139,7 @@ export default function Feed({ r2Enabled = false, userImage, userName }: FeedPro
         <>
           <div className="space-y-4">
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} currentUserId={currentUserId} />
+              <PostCard key={post.id} post={post} currentUserId={currentUserId} onDeleted={handlePostDeleted} onUpdated={handlePostUpdated} />
             ))}
           </div>
 

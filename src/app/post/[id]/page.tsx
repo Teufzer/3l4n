@@ -84,6 +84,7 @@ export default async function SharedPostPage({ params }: Props) {
     ...rest,
     imageUrl: post.imageUrl ?? null,
     createdAt: post.createdAt.toISOString(),
+    editedAt: post.editedAt ? post.editedAt.toISOString() : null,
     author: {
       ...user,
       name: user.name ?? 'Utilisateur',

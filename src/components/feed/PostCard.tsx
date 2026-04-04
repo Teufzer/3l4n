@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import CommentSection from './CommentSection'
@@ -17,6 +17,8 @@ export interface Reaction {
 export interface Post {
   id: string
   content: string
+  originalContent?: string | null
+  editedAt?: string | null
   imageUrl?: string | null
   createdAt: string
   author: {
@@ -31,6 +33,8 @@ export interface Post {
 interface PostCardProps {
   post: Post
   currentUserId?: string
+  onDeleted?: (postId: string) => void
+  onUpdated?: (post: Post) => void
 }
 
 const REACTIONS: { type: ReactionType; emoji: string; label: string }[] = [
@@ -58,10 +62,35 @@ function getInitials(name: string) {
     .slice(0, 2)
 }
 
-export default function PostCard({ post, currentUserId }: PostCardProps) {
+export default function PostCard({ post, currentUserId, onDeleted, onUpdated }: PostCardProps) {
   const [reactions, setReactions] = useState<Reaction[]>(post.reactions)
   const [loading, setLoading] = useState<ReactionType | null>(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+
+  // Edit/delete state
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editContent, setEditContent] = useState(post.content)
+  const [editLoading, setEditLoading] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [currentContent, setCurrentContent] = useState(post.content)
+  const [currentOriginal, setCurrentOriginal] = useState(post.originalContent)
+  const [currentEditedAt, setCurrentEditedAt] = useState(post.editedAt)
+  const [showOriginal, setShowOriginal] = useState(false)
+
+  const menuRef = useRef<HTMLDivElement>(null)
+  const isOwn = currentUserId && post.author.id === currentUserId
+
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    if (menuOpen) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [menuOpen])
 
   const countByType = (type: ReactionType) =>
     reactions.filter((r) => r.type === type).length
@@ -100,9 +129,62 @@ export default function PostCard({ post, currentUserId }: PostCardProps) {
     }
   }
 
+  const handleEdit = async () => {
+    if (!editContent.trim() || editLoading) return
+    setEditLoading(true)
+    try {
+      const res = await fetch(`/api/posts/${post.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editContent.trim() }),
+      })
+      if (!res.ok) throw new Error('Erreur lors de la modification')
+      const data = await res.json()
+      const updated: Post = { ...post, ...data.post }
+      setCurrentContent(data.post.content)
+      setCurrentOriginal(data.post.originalContent ?? null)
+      setCurrentEditedAt(data.post.editedAt ?? null)
+      setShowOriginal(false)
+      setEditModalOpen(false)
+      setMenuOpen(false)
+      toast.success('Post modifié ✏️')
+      onUpdated?.(updated)
+    } catch (err) {
+      console.error(err)
+      toast.error('Impossible de modifier le post')
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm('Supprimer ce post définitivement ?')
+    if (!confirmed) return
+    setDeleteLoading(true)
+    setMenuOpen(false)
+    try {
+      const res = await fetch(`/api/posts/${post.id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Erreur lors de la suppression')
+      toast.success('Post supprimé')
+      onDeleted?.(post.id)
+    } catch (err) {
+      console.error(err)
+      toast.error('Impossible de supprimer le post')
+      setDeleteLoading(false)
+    }
+  }
+
+  const openEditModal = () => {
+    setEditContent(currentContent)
+    setEditModalOpen(true)
+    setMenuOpen(false)
+  }
+
   return (
     <>
-      <article className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-4 space-y-3 hover:border-white/10 transition-colors">
+      <article
+        className={`bg-[#1a1a1a] border border-white/5 rounded-2xl p-4 space-y-3 hover:border-white/10 transition-colors ${deleteLoading ? 'opacity-50 pointer-events-none' : ''}`}
+      >
         {/* Header */}
         <div className="flex items-center gap-3 relative">
           {(post.author.image || post.author.avatar) ? (
@@ -136,11 +218,61 @@ export default function PostCard({ post, currentUserId }: PostCardProps) {
               🔗
             </button>
             <ReportButton postId={post.id} currentUserId={currentUserId} />
+
+            {/* ··· menu — visible uniquement sur ses propres posts */}
+            {isOwn && (
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className="p-1.5 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/5 transition-all text-base leading-none"
+                  aria-label="Options du post"
+                  title="Options"
+                >
+                  ···
+                </button>
+
+                {menuOpen && (
+                  <div className="absolute right-0 top-8 z-20 w-36 bg-[#222] border border-white/10 rounded-xl shadow-xl overflow-hidden">
+                    <button
+                      onClick={openEditModal}
+                      className="w-full text-left px-4 py-2.5 text-sm text-white/80 hover:bg-white/5 hover:text-emerald-400 transition-colors flex items-center gap-2"
+                    >
+                      <span>✏️</span> Modifier
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-2"
+                    >
+                      <span>🗑️</span> Supprimer
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Content */}
-        <p className="text-white/80 text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
+        <div className="space-y-1">
+          <p className="text-white/80 text-sm leading-relaxed whitespace-pre-wrap">
+            {showOriginal ? currentOriginal : currentContent}
+          </p>
+
+          {/* Badge modifié + toggle original */}
+          {currentEditedAt && (
+            <div className="flex items-center gap-2 pt-0.5">
+              <span className="text-white/30 text-xs">✏️ modifié</span>
+              {currentOriginal && (
+                <button
+                  onClick={() => setShowOriginal((v) => !v)}
+                  className="text-xs text-white/30 hover:text-emerald-400 underline underline-offset-2 transition-colors"
+                >
+                  {showOriginal ? 'voir actuel' : 'voir original'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Image */}
         {post.imageUrl && (
@@ -210,6 +342,63 @@ export default function PostCard({ post, currentUserId }: PostCardProps) {
               alt="Photo du post"
               className="w-full max-h-[80vh] object-contain rounded-2xl border border-white/10"
             />
+          </div>
+        </div>
+      )}
+
+      {/* Modal de modification */}
+      {editModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => !editLoading && setEditModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Modifier le post"
+        >
+          <div
+            className="bg-[#1a1a1a] border border-white/10 rounded-2xl p-5 w-full max-w-lg space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-white font-semibold text-base">Modifier le post</h2>
+              <button
+                onClick={() => !editLoading && setEditModalOpen(false)}
+                className="text-white/40 hover:text-white/70 transition-colors text-lg leading-none"
+                aria-label="Fermer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              rows={5}
+              maxLength={1000}
+              className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-white/90 text-sm placeholder-white/20 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/30 transition-all"
+              placeholder="Que veux-tu dire ?"
+              disabled={editLoading}
+            />
+
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-white/20 text-xs">{editContent.length}/1000</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => !editLoading && setEditModalOpen(false)}
+                  disabled={editLoading}
+                  className="px-4 py-2 rounded-xl border border-white/10 text-white/60 text-sm hover:border-white/20 hover:text-white/80 transition-all disabled:opacity-40"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleEdit}
+                  disabled={editLoading || !editContent.trim() || editContent.trim() === currentContent}
+                  className="px-4 py-2 rounded-xl bg-emerald-500 text-black text-sm font-semibold hover:bg-emerald-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {editLoading ? 'Sauvegarde…' : 'Sauvegarder'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
