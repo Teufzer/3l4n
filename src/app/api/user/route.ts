@@ -22,6 +22,7 @@ export async function GET() {
       email: true,
       avatar: true,
       bannerUrl: true,
+      weightPrivate: true,
     },
   })
 
@@ -46,6 +47,7 @@ export async function PATCH(req: NextRequest) {
     bio?: string
     targetWeight?: number | null
     startWeight?: number | null
+    weightPrivate?: boolean
   }
   try {
     body = await req.json()
@@ -53,7 +55,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'JSON invalide' }, { status: 400 })
   }
 
-  const { username, name, bio, targetWeight, startWeight } = body
+  const { username, name, bio, targetWeight, startWeight, weightPrivate } = body
 
   // Validation
   if (targetWeight !== undefined && targetWeight !== null && (typeof targetWeight !== 'number' || targetWeight <= 0)) {
@@ -92,6 +94,10 @@ export async function PATCH(req: NextRequest) {
   }
   if (targetWeight !== undefined) updateData.targetWeight = targetWeight
   if (startWeight !== undefined) updateData.startWeight = startWeight
+  if (weightPrivate !== undefined) {
+    if (typeof weightPrivate !== 'boolean') return NextResponse.json({ error: 'weightPrivate doit être un booléen' }, { status: 400 })
+    updateData.weightPrivate = weightPrivate
+  }
 
   const user = await prisma.user.update({
     where: { id: userId },
@@ -103,6 +109,7 @@ export async function PATCH(req: NextRequest) {
       bio: true,
       targetWeight: true,
       startWeight: true,
+      weightPrivate: true,
     },
   })
 

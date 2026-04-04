@@ -20,6 +20,7 @@ export async function GET(
             username: true,
             avatar: true,
             image: true,
+            banned: true,
           },
         },
         reactions: {
@@ -40,11 +41,17 @@ export async function GET(
       return NextResponse.json({ error: 'Post introuvable' }, { status: 404 })
     }
 
+    if (post.user.banned) {
+      return NextResponse.json({ error: 'Post introuvable' }, { status: 404 })
+    }
+
     const { user, comments, ...rest } = post
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { banned: _banned, ...safeUser } = user
 
     const normalized = {
       ...rest,
-      author: user,
+      author: safeUser,
       comments: comments.map(({ user: commentUser, ...c }) => ({
         ...c,
         author: commentUser,

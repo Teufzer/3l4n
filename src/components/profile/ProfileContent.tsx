@@ -23,6 +23,7 @@ interface ProfileUser {
   createdAt: Date
   startWeight: number | null
   targetWeight: number | null
+  weightPrivate?: boolean
   weightEntries: { id: string; weight: number; date: Date; note: string | null }[]
   posts: { id: string; content: string; createdAt: Date; reactions: { type: string }[] }[]
   _count: { posts: number; weightEntries: number; followers?: number; following?: number }
@@ -114,6 +115,7 @@ export default function ProfileContent({
   const [blocking, setBlocking] = useState(false)
 
   const isOwnProfile = session?.user?.id === user.id
+  const isWeightPrivate = !!user.weightPrivate && !isOwnProfile
   const stats = computeWeightStats(user.weightEntries, user.startWeight)
   const streak = computeStreak(user.weightEntries)
 
@@ -359,7 +361,7 @@ export default function ProfileContent({
                   : 'text-zinc-500 hover:text-zinc-300'
                 }`}
             >
-              {tab.label}
+              {tab.id === 'courbe' && isWeightPrivate ? '🔒 Privée' : tab.label}
               {activeTab === tab.id && (
                 <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-emerald-500 rounded-full" />
               )}
@@ -399,7 +401,13 @@ export default function ProfileContent({
         {/* Courbe tab */}
         {activeTab === 'courbe' && (
           <div className="space-y-4">
-            {chartData.length > 0 ? (
+            {isWeightPrivate ? (
+              <div className="text-center py-12">
+                <p className="text-3xl mb-3">🔒</p>
+                <p className="text-white font-semibold text-sm mb-1">Données privées</p>
+                <p className="text-zinc-500 text-sm">Cet utilisateur a rendu sa courbe de poids privée.</p>
+              </div>
+            ) : chartData.length > 0 ? (
               <>
                 <WeightChart
                   data={chartData}
