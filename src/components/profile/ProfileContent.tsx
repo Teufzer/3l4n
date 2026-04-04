@@ -23,6 +23,7 @@ interface ProfileUser {
   createdAt: Date
   startWeight: number | null
   targetWeight: number | null
+  height?: number | null
   weightPrivate?: boolean
   weightEntries: { id: string; weight: number; date: Date; note: string | null }[]
   posts: { id: string; content: string; createdAt: Date; reactions: { type: string }[] }[]
@@ -118,6 +119,24 @@ export default function ProfileContent({
   const isWeightPrivate = !!user.weightPrivate && !isOwnProfile
   const stats = computeWeightStats(user.weightEntries, user.startWeight)
   const streak = computeStreak(user.weightEntries)
+
+  // IMC
+  const sortedEntries = [...user.weightEntries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  const lastWeight = sortedEntries.length > 0 ? sortedEntries[sortedEntries.length - 1].weight : null
+  const showImc = !isWeightPrivate && lastWeight !== null && user.height != null && user.height > 0
+  const imcValue = showImc ? lastWeight! / Math.pow(user.height! / 100, 2) : null
+  const imcLabel = imcValue !== null
+    ? imcValue < 18.5 ? 'Insuffisance pondérale'
+    : imcValue < 25 ? 'Corpulence normale'
+    : imcValue < 30 ? 'Surpoids'
+    : 'Obésité'
+    : null
+  const imcColor = imcValue !== null
+    ? imcValue < 18.5 ? 'text-amber-400'
+    : imcValue < 25 ? 'text-emerald-400'
+    : imcValue < 30 ? 'text-amber-400'
+    : 'text-red-400'
+    : null
 
   const handleBlock = async () => {
     setBlocking(true)
@@ -335,6 +354,12 @@ export default function ProfileContent({
                   <span className="text-zinc-500 ml-1">
                     jour{streak > 1 ? 's' : ''} streak 🔥
                   </span>
+                </span>
+              )}
+              {imcValue !== null && imcLabel !== null && (
+                <span title={imcLabel}>
+                  <span className={`font-bold text-xs ${imcColor}`}>IMC {imcValue.toFixed(1)}</span>
+                  <span className="text-zinc-500 ml-1 text-xs">{imcLabel}</span>
                 </span>
               )}
             </div>

@@ -19,6 +19,7 @@ export async function GET() {
       bio: true,
       targetWeight: true,
       startWeight: true,
+      height: true,
       email: true,
       avatar: true,
       bannerUrl: true,
@@ -47,6 +48,7 @@ export async function PATCH(req: NextRequest) {
     bio?: string
     targetWeight?: number | null
     startWeight?: number | null
+    height?: number | null
     weightPrivate?: boolean
   }
   try {
@@ -55,7 +57,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'JSON invalide' }, { status: 400 })
   }
 
-  const { username, name, bio, targetWeight, startWeight, weightPrivate } = body
+  const { username, name, bio, targetWeight, startWeight, height, weightPrivate } = body
 
   // Validation
   if (targetWeight !== undefined && targetWeight !== null && (typeof targetWeight !== 'number' || targetWeight <= 0)) {
@@ -63,6 +65,9 @@ export async function PATCH(req: NextRequest) {
   }
   if (startWeight !== undefined && startWeight !== null && (typeof startWeight !== 'number' || startWeight <= 0)) {
     return NextResponse.json({ error: 'Poids de départ invalide' }, { status: 400 })
+  }
+  if (height !== undefined && height !== null && (typeof height !== 'number' || height < 100 || height > 250)) {
+    return NextResponse.json({ error: 'Taille invalide (entre 100 et 250 cm)' }, { status: 400 })
   }
 
   const updateData: Record<string, unknown> = {}
@@ -94,6 +99,7 @@ export async function PATCH(req: NextRequest) {
   }
   if (targetWeight !== undefined) updateData.targetWeight = targetWeight
   if (startWeight !== undefined) updateData.startWeight = startWeight
+  if (height !== undefined) updateData.height = height
   if (weightPrivate !== undefined) {
     if (typeof weightPrivate !== 'boolean') return NextResponse.json({ error: 'weightPrivate doit être un booléen' }, { status: 400 })
     updateData.weightPrivate = weightPrivate
@@ -109,6 +115,7 @@ export async function PATCH(req: NextRequest) {
       bio: true,
       targetWeight: true,
       startWeight: true,
+      height: true,
       weightPrivate: true,
     },
   })

@@ -15,12 +15,25 @@ export default async function UsernamePage({ params }: Props) {
 
   const user = await prisma.user.findUnique({
     where: { username: clean },
-    include: {
-      weightEntries: { orderBy: { date: 'asc' } },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      image: true,
+      avatar: true,
+      bannerUrl: true,
+      bio: true,
+      createdAt: true,
+      startWeight: true,
+      targetWeight: true,
+      height: true,
+      weightPrivate: true,
+      verified: true,
+      weightEntries: { orderBy: { date: 'asc' }, select: { id: true, weight: true, date: true, note: true } },
       posts: {
         orderBy: { createdAt: 'desc' },
         take: 5,
-        include: { reactions: true },
+        select: { id: true, content: true, createdAt: true, imageUrl: true, reactions: { select: { type: true } } },
       },
       _count: { select: { posts: true, weightEntries: true, followers: true, following: true } },
     },

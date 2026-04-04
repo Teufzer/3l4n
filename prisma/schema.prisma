@@ -33,6 +33,7 @@ model User {
   banned               Boolean        @default(false)
   verified             Boolean        @default(false)
   weightPrivate        Boolean        @default(false)
+  height               Int?           // taille en cm
   accounts             Account[]
   sessions             Session[]
   weightEntries        WeightEntry[]

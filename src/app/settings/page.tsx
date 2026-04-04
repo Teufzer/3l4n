@@ -12,6 +12,7 @@ interface UserProfile {
   bio: string | null
   targetWeight: number | null
   startWeight: number | null
+  height: number | null
   email: string
   avatar: string | null
   bannerUrl: string | null
@@ -37,6 +38,7 @@ export default function SettingsPage() {
   const [bio, setBio] = useState('')
   const [startWeight, setStartWeight] = useState('')
   const [targetWeight, setTargetWeight] = useState('')
+  const [height, setHeight] = useState('')
 
   // Privacy state
   const [weightPrivate, setWeightPrivate] = useState(false)
@@ -54,6 +56,7 @@ export default function SettingsPage() {
           setBio(user.bio ?? '')
           setStartWeight(user.startWeight?.toString() ?? '')
           setTargetWeight(user.targetWeight?.toString() ?? '')
+          setHeight(user.height?.toString() ?? '')
           setWeightPrivate(user.weightPrivate ?? false)
         }
       })
@@ -109,6 +112,7 @@ export default function SettingsPage() {
       bio: bio.trim() || null,
       startWeight: startWeight ? parseFloat(startWeight) : null,
       targetWeight: targetWeight ? parseFloat(targetWeight) : null,
+      height: height ? parseInt(height, 10) : null,
     }
 
     try {
@@ -127,10 +131,11 @@ export default function SettingsPage() {
       const fresh = await fetch('/api/user').then(r => r.json())
       if (fresh.user) {
         setProfile(fresh.user)
-          setName(fresh.user.name || '')
+        setName(fresh.user.name || '')
         setBio(fresh.user.bio || '')
         setStartWeight(fresh.user.startWeight?.toString() || '')
         setTargetWeight(fresh.user.targetWeight?.toString() || '')
+        setHeight(fresh.user.height?.toString() || '')
       }
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
@@ -367,6 +372,25 @@ export default function SettingsPage() {
                 placeholder="ex: 75.0"
                 className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:border-emerald-500/50 transition"
               />
+            </div>
+
+            {/* Taille */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="height" className="text-sm text-white/60 font-medium">
+                Taille <span className="text-white/20">(cm)</span>
+              </label>
+              <input
+                id="height"
+                type="number"
+                step="1"
+                min="100"
+                max="250"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                placeholder="ex: 175"
+                className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none focus:border-emerald-500/50 transition"
+              />
+              <p className="text-xs text-white/20">Utilisée pour calculer ton IMC sur le dashboard</p>
             </div>
 
             {/* Preview progression */}

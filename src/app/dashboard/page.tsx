@@ -22,7 +22,7 @@ export default async function DashboardPage() {
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { targetWeight: true, startWeight: true, username: true, emailVerified: true, accounts: { select: { provider: true } } },
+      select: { targetWeight: true, startWeight: true, height: true, username: true, emailVerified: true, accounts: { select: { provider: true } } },
     }),
     prisma.weightEntry.count({ where: { userId: session.user.id } }),
   ])
@@ -74,7 +74,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* Dashboard client (stats + chart + form) */}
-          <DashboardClient initialEntries={entries} targetWeight={user?.targetWeight ?? null} startWeight={user?.startWeight ?? null} />
+          <DashboardClient initialEntries={entries} targetWeight={user?.targetWeight ?? null} startWeight={user?.startWeight ?? null} height={user?.height ?? null} />
 
           {/* Feed link */}
           <Link
