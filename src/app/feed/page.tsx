@@ -17,7 +17,7 @@ export default async function FeedPage() {
       {/* Top bar */}
       <header className="sticky top-0 z-20 bg-[#0f0f0f]/80 backdrop-blur-md border-b border-white/5 px-4 py-3">
         <div className="max-w-xl mx-auto flex items-center justify-between">
-          <Logo href="/feed" size="md" />
+          <h1 className="text-lg font-bold text-white">Communauté</h1>
           {session?.user ? (
             <Link
               href={profileHref}
