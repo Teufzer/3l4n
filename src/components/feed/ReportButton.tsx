@@ -58,7 +58,7 @@ export default function ReportButton({
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 text-white/20 hover:text-white/50 transition-colors text-[11px] px-1.5 py-1 rounded"
+        className="p-1.5 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/5 transition-all"
         title="Signaler"
         aria-label="Signaler ce contenu"
       >
