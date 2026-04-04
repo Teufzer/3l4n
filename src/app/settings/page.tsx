@@ -15,6 +15,7 @@ interface UserProfile {
   email: string
   avatar: string | null
   bannerUrl: string | null
+  weightPrivate: boolean
 }
 
 export default function SettingsPage() {
@@ -37,6 +38,11 @@ export default function SettingsPage() {
   const [startWeight, setStartWeight] = useState('')
   const [targetWeight, setTargetWeight] = useState('')
 
+  // Privacy state
+  const [weightPrivate, setWeightPrivate] = useState(false)
+  const [privacySaving, setPrivacySaving] = useState(false)
+  const [privacySaved, setPrivacySaved] = useState(false)
+
   useEffect(() => {
     fetch('/api/user')
       .then((r) => r.json())
@@ -48,6 +54,7 @@ export default function SettingsPage() {
           setBio(user.bio ?? '')
           setStartWeight(user.startWeight?.toString() ?? '')
           setTargetWeight(user.targetWeight?.toString() ?? '')
+          setWeightPrivate(user.weightPrivate ?? false)
         }
       })
       .catch(() => setError('Impossible de charger le profil'))
@@ -137,6 +144,30 @@ export default function SettingsPage() {
   async function handleSignOut() {
     await signOut({ redirect: false })
     router.push('/login')
+  }
+
+  async function handleWeightPrivateToggle(newValue: boolean) {
+    setWeightPrivate(newValue)
+    setPrivacySaving(true)
+    setPrivacySaved(false)
+    try {
+      const res = await fetch('/api/user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weightPrivate: newValue }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Erreur')
+      }
+      setPrivacySaved(true)
+      setTimeout(() => setPrivacySaved(false), 3000)
+    } catch {
+      // Revert on error
+      setWeightPrivate(!newValue)
+    } finally {
+      setPrivacySaving(false)
+    }
   }
 
   if (loading) {
@@ -352,6 +383,49 @@ export default function SettingsPage() {
                     {startWeight} kg → {targetWeight} kg
                   </p>
                 </div>
+              </div>
+            )}
+          </section>
+
+          {/* Confidentialité */}
+          <section className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
+            <div>
+              <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider">
+                Confidentialité
+              </h2>
+              <p className="text-xs text-white/20 mt-1">
+                Contrôle ce que les autres peuvent voir sur ton profil
+              </p>
+            </div>
+
+            {/* Weight privacy toggle */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-white font-medium">Rendre ma courbe de poids privée</p>
+                <p className="text-xs text-white/30 mt-0.5">
+                  Seul toi pourras voir l&apos;onglet Courbe sur ton profil
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleWeightPrivateToggle(!weightPrivate)}
+                disabled={privacySaving}
+                aria-label="Rendre ma courbe de poids privée"
+                className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
+                  weightPrivate ? 'bg-emerald-500' : 'bg-white/10'
+                } ${privacySaving ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                    weightPrivate ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {privacySaved && (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-sm text-emerald-400 flex items-center gap-2">
+                <span>✓</span> Confidentialité mise à jour !
               </div>
             )}
           </section>
