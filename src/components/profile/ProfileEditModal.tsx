@@ -7,12 +7,14 @@ interface ProfileEditModalProps {
   userId: string
   currentName: string
   currentBio: string
+  buttonVariant?: 'default' | 'outline'
 }
 
 export default function ProfileEditModal({
   userId,
   currentName,
   currentBio,
+  buttonVariant = 'default',
 }: ProfileEditModalProps) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(currentName)
@@ -60,17 +62,27 @@ export default function ProfileEditModal({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 text-sm text-emerald-500 hover:text-emerald-400 transition font-medium"
+        className={
+          buttonVariant === 'outline'
+            ? 'px-4 py-1.5 rounded-full border border-zinc-500 text-white text-sm font-medium hover:border-zinc-400 hover:bg-zinc-800 transition-colors'
+            : 'flex items-center gap-2 text-sm text-emerald-500 hover:text-emerald-400 transition font-medium'
+        }
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-          />
-        </svg>
-        Modifier mon profil
+        {buttonVariant === 'outline' ? (
+          'Modifier le profil'
+        ) : (
+          <>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
+            </svg>
+            Modifier mon profil
+          </>
+        )}
       </button>
 
       {open && (

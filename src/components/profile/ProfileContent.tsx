@@ -1,72 +1,13 @@
-import Link from 'next/link'
-import WeightChart, { WeightDataPoint } from '@/components/weight/WeightChart'
-import ProfileEditModal from '@/components/profile/ProfileEditModal'
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
 import { Session } from 'next-auth'
+import WeightChart, { WeightDataPoint } from '@/components/weight/WeightChart'
+import WeightStats from '@/components/weight/WeightStats'
+import ProfileEditModal from '@/components/profile/ProfileEditModal'
+import PostCard, { Post } from '@/components/feed/PostCard'
 
-interface ProfilePageProps {
-  params: Promise<{ id: string }>
-}
-
-function getInitials(name: string | null | undefined) {
-  if (!name) return '?'
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
-
-function computeWeightStats(entries: { weight: number; date: Date }[], startWeight?: number | null) {
-  if (entries.length === 0) return null
-
-  const sorted = [...entries].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  )
-  const first = startWeight ?? sorted[0].weight
-  const last = sorted[sorted.length - 1].weight
-  const diff = last - first
-
-  return {
-    start: first,
-    current: last,
-    diff: Math.abs(diff).toFixed(1),
-    direction: diff < 0 ? 'perdu' : 'pris',
-    isLoss: diff < 0,
-  }
-}
-
-function computeStreak(entries: { date: Date }[]): number {
-  if (entries.length === 0) return 0
-
-  const dates = entries
-    .map((e) => {
-      const d = new Date(e.date)
-      return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-    })
-    .sort((a, b) => b - a)
-
-  const unique = [...new Set(dates)]
-  const DAY = 86400000
-  const today = new Date()
-  const todayTs = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
-
-  let streak = 0
-  let expected = todayTs
-
-  if (unique[0] < expected - DAY) return 0
-
-  for (const ts of unique) {
-    if (ts === expected || ts === expected - DAY) {
-      streak++
-      expected = ts - DAY
-    } else if (ts < expected) {
-      break
-    }
-  }
-
-  return streak
-}
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 interface ProfileUser {
   id: string
@@ -83,186 +24,346 @@ interface ProfileUser {
   _count: { posts: number; weightEntries: number }
 }
 
-export default function ProfileContent({ user, session }: { user: ProfileUser; session: Session | null }) {
+type Tab = 'posts' | 'courbe' | 'medias'
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function getInitials(name: string | null | undefined) {
+  if (!name) return '?'
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+function computeWeightStats(
+  entries: { weight: number; date: Date }[],
+  startWeight?: number | null
+) {
+  if (entries.length === 0) return null
+  const sorted = [...entries].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  )
+  const first = startWeight ?? sorted[0].weight
+  const last = sorted[sorted.length - 1].weight
+  const diff = last - first
+  return {
+    start: first,
+    current: last,
+    diff: Math.abs(diff).toFixed(1),
+    direction: diff < 0 ? 'perdus' : 'pris',
+    isLoss: diff < 0,
+  }
+}
+
+function computeStreak(entries: { date: Date }[]): number {
+  if (entries.length === 0) return 0
+  const dates = entries
+    .map((e) => {
+      const d = new Date(e.date)
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+    })
+    .sort((a, b) => b - a)
+  const unique = [...new Set(dates)]
+  const DAY = 86400000
+  const today = new Date()
+  const todayTs = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+  let streak = 0
+  let expected = todayTs
+  if (unique[0] < expected - DAY) return 0
+  for (const ts of unique) {
+    if (ts === expected || ts === expected - DAY) {
+      streak++
+      expected = ts - DAY
+    } else if (ts < expected) {
+      break
+    }
+  }
+  return streak
+}
+
+function formatMemberSince(date: Date) {
+  return new Date(date).toLocaleDateString('fr-FR', {
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+export default function ProfileContent({
+  user,
+  session,
+}: {
+  user: ProfileUser
+  session: Session | null
+}) {
+  const [activeTab, setActiveTab] = useState<Tab>('posts')
+  const [posts, setPosts] = useState<Post[]>([])
+  const [postsLoading, setPostsLoading] = useState(false)
+  const [postsFetched, setPostsFetched] = useState(false)
+
+  const isOwnProfile = session?.user?.id === user.id
   const stats = computeWeightStats(user.weightEntries, user.startWeight)
   const streak = computeStreak(user.weightEntries)
-  const isOwnProfile = session?.user?.id === user.id
 
   const chartData: WeightDataPoint[] = user.weightEntries.map((e) => ({
-    date: e.date.toISOString(),
+    date: new Date(e.date).toISOString(),
     weight: e.weight,
     note: e.note ?? null,
   }))
 
+  // Fetch posts on first load (or when switching to Posts tab)
+  const fetchPosts = useCallback(async () => {
+    if (postsLoading) return
+    setPostsLoading(true)
+    try {
+      const res = await fetch(`/api/posts?userId=${user.id}&limit=50`)
+      if (!res.ok) throw new Error('Erreur')
+      const data = await res.json()
+      setPosts(data.posts ?? [])
+    } catch {
+      // silent
+    } finally {
+      setPostsLoading(false)
+      setPostsFetched(true)
+    }
+  }, [user.id, postsLoading])
+
+  useEffect(() => {
+    if (!postsFetched) {
+      fetchPosts()
+    }
+  }, [postsFetched, fetchPosts])
+
+  const mediaPosts = posts.filter((p) => p.imageUrl)
+
+  const handlePostDeleted = (postId: string) => {
+    setPosts((prev) => prev.filter((p) => p.id !== postId))
+  }
+
+  const handlePostUpdated = (updated: Post) => {
+    setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+  }
+
   return (
-    <div className="min-h-screen bg-[#0f0f0f] px-4 py-8 pb-24">
-      <div className="max-w-lg mx-auto">
+    <div className="min-h-screen bg-[#0f0f0f] pb-24">
+      {/* ── Sticky header ─────────────────────────────────────── */}
+      <header className="sticky top-0 z-30 bg-[#0f0f0f]/90 backdrop-blur-sm border-b border-zinc-800/60 px-4 py-3 flex items-center gap-4">
+        <button
+          onClick={() => window.history.back()}
+          className="p-1.5 rounded-full hover:bg-zinc-800 transition-colors text-white"
+          aria-label="Retour"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <div className="min-w-0">
+          <p className="text-white font-bold text-base leading-tight truncate">
+            {user.name || 'Utilisateur'}
+          </p>
+          <p className="text-zinc-500 text-xs">
+            {user._count.posts} post{user._count.posts !== 1 ? 's' : ''}
+          </p>
+        </div>
+      </header>
 
+      {/* ── Banner + avatar ────────────────────────────────────── */}
+      <div className="relative">
+        {/* Banner */}
+        <div className="h-48 bg-gradient-to-br from-emerald-600 to-emerald-900" />
 
-        {/* Profile header */}
-        <div className="bg-[#1a1a1a] rounded-2xl p-6 border border-zinc-800 mb-4">
-          <div className="flex items-start gap-4">
+        {/* Avatar — overlaps banner */}
+        <div className="px-4">
+          <div className="flex items-end justify-between -mt-10">
             {/* Avatar */}
-            <div className="relative flex-shrink-0">
+            <div className="flex-shrink-0">
               {user.avatar || user.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={(user.avatar || user.image)!}
                   alt={user.name || 'Avatar'}
-                  width={72}
-                  height={72}
-                  className="w-[72px] h-[72px] rounded-full object-cover ring-2 ring-emerald-500/30"
+                  className="w-20 h-20 rounded-full object-cover ring-4 ring-[#0f0f0f]"
                 />
               ) : (
-                <div className="w-[72px] h-[72px] rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <div className="w-20 h-20 rounded-full bg-[#1a1a1a] border-2 border-zinc-700 ring-4 ring-[#0f0f0f] flex items-center justify-center">
                   <span className="text-emerald-400 font-bold text-2xl">
                     {getInitials(user.name)}
                   </span>
                 </div>
               )}
-              {/* Streak badge */}
-              {streak > 0 && (
-                <div className="absolute -bottom-1 -right-1 bg-[#0f0f0f] border border-amber-500/40 rounded-full px-1.5 py-0.5 flex items-center gap-0.5">
-                  <span className="text-xs">🔥</span>
-                  <span className="text-xs font-bold text-amber-400">{streak}</span>
-                </div>
-              )}
             </div>
 
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold text-white truncate">
-                {user.name || 'Utilisateur'}
-              </h1>
-              <p className="text-sm text-zinc-500 mt-0.5">
-                Membre depuis{' '}
-                {new Date(user.createdAt).toLocaleDateString('fr-FR', {
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </p>
-              {user.bio && (
-                <p className="mt-3 text-sm text-zinc-300 leading-relaxed">{user.bio}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Edit button for own profile */}
-          {isOwnProfile && (
-            <div className="mt-4 pt-4 border-t border-zinc-800">
-              <ProfileEditModal
-                userId={user.id}
-                currentName={user.name ?? ''}
-                currentBio={user.bio ?? ''}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Stats grid */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          {/* Weight diff */}
-          <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-zinc-800">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Poids</p>
-            {stats ? (
-              <>
-                <p className="text-xl font-bold text-white">
-                  {stats.diff}
-                  <span className="text-xs font-normal text-zinc-400 ml-0.5">kg</span>
-                </p>
-                <p className="text-xs mt-1">
-                  <span className={stats.isLoss ? 'text-emerald-400' : 'text-amber-400'}>
-                    {stats.isLoss ? '▼' : '▲'} {stats.direction}
-                  </span>
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-xl font-bold text-zinc-600">—</p>
-                <p className="text-xs text-zinc-600 mt-1">Aucune data</p>
-              </>
+            {/* Edit button */}
+            {isOwnProfile && (
+              <div className="mb-2">
+                <ProfileEditModal
+                  userId={user.id}
+                  currentName={user.name ?? ''}
+                  currentBio={user.bio ?? ''}
+                  buttonVariant="outline"
+                />
+              </div>
             )}
           </div>
 
-          {/* Posts count */}
-          <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-zinc-800">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Posts</p>
-            <p className="text-xl font-bold text-white">{user._count.posts}</p>
-            <p className="text-xs text-zinc-500 mt-1">
-              {user._count.posts === 1 ? 'partage' : 'partages'}
+          {/* Profile info */}
+          <div className="mt-3 space-y-1">
+            <h1 className="text-white font-bold text-xl leading-tight">
+              {user.name || 'Utilisateur'}
+            </h1>
+            {user.username && (
+              <p className="text-zinc-500 text-sm">@{user.username}</p>
+            )}
+            {user.bio && (
+              <p className="text-zinc-300 text-sm leading-relaxed pt-1">{user.bio}</p>
+            )}
+            <p className="text-zinc-500 text-sm flex items-center gap-1.5 pt-1">
+              <svg className="w-4 h-4 inline-block flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+              </svg>
+              Membre depuis {formatMemberSince(user.createdAt)}
             </p>
-          </div>
 
-          {/* Streak */}
-          <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-zinc-800">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Streak</p>
-            <p className="text-xl font-bold">
-              {streak > 0 ? (
-                <span className="text-amber-400">{streak}</span>
-              ) : (
-                <span className="text-zinc-600">0</span>
+            {/* Inline stats */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-sm">
+              <span>
+                <span className="text-white font-bold">{user._count.posts}</span>
+                <span className="text-zinc-500 ml-1">Posts</span>
+              </span>
+              {stats && (
+                <span>
+                  <span className={`font-bold ${stats.isLoss ? 'text-emerald-400' : 'text-amber-400'}`}>
+                    {stats.diff} kg
+                  </span>
+                  <span className="text-zinc-500 ml-1">{stats.direction}</span>
+                </span>
               )}
-            </p>
-            <p className="text-xs text-zinc-500 mt-1">
-              {streak > 0 ? `jour${streak > 1 ? 's' : ''} 🔥` : 'jour consécutif'}
-            </p>
+              {streak > 0 && (
+                <span>
+                  <span className="text-amber-400 font-bold">{streak}</span>
+                  <span className="text-zinc-500 ml-1">
+                    jour{streak > 1 ? 's' : ''} streak 🔥
+                  </span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Weight chart */}
-        {chartData.length > 0 && (
-          <div className="mb-4">
-            <WeightChart data={chartData} />
-          </div>
-        )}
-
-        {chartData.length === 0 && isOwnProfile && (
-          <div className="bg-[#1a1a1a] rounded-2xl p-6 border border-zinc-800 mb-4 text-center">
-            <p className="text-3xl mb-2">📊</p>
-            <p className="text-zinc-400 text-sm">Aucune donnée de poids pour l&apos;instant.</p>
-            <Link
-              href="/dashboard"
-              className="inline-block mt-3 text-emerald-500 hover:text-emerald-400 text-sm font-medium transition"
+      {/* ── Tabs ──────────────────────────────────────────────── */}
+      <div className="mt-4 border-b border-zinc-800 sticky top-[57px] z-20 bg-[#0f0f0f]">
+        <div className="flex">
+          {(
+            [
+              { id: 'posts', label: 'Posts' },
+              { id: 'courbe', label: 'Courbe' },
+              { id: 'medias', label: 'Médias' },
+            ] as { id: Tab; label: string }[]
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-3.5 text-sm font-medium transition-colors relative
+                ${activeTab === tab.id
+                  ? 'text-white'
+                  : 'text-zinc-500 hover:text-zinc-300'
+                }`}
             >
-              Ajouter une pesée →
-            </Link>
+              {tab.label}
+              {activeTab === tab.id && (
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-emerald-500 rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Tab content ───────────────────────────────────────── */}
+      <div className="px-4 py-4 max-w-2xl mx-auto">
+        {/* Posts tab */}
+        {activeTab === 'posts' && (
+          <div className="space-y-4">
+            {postsLoading ? (
+              <div className="flex justify-center py-10">
+                <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-3xl mb-3">📝</p>
+                <p className="text-zinc-500 text-sm">Aucun post pour l&apos;instant.</p>
+              </div>
+            ) : (
+              posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  currentUserId={session?.user?.id}
+                  onDeleted={handlePostDeleted}
+                  onUpdated={handlePostUpdated}
+                />
+              ))
+            )}
           </div>
         )}
 
-        {/* Objectif de poids */}
-        {user.targetWeight && (
-          <div className="bg-[#1a1a1a] rounded-2xl p-4 border border-zinc-800 mb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Objectif</p>
-                <p className="text-xl font-bold text-emerald-400">{user.targetWeight} kg</p>
-                {stats && (
-                  <p className="text-xs text-zinc-500 mt-1">
-                    {(stats.current - user.targetWeight) > 0
-                      ? `${(stats.current - user.targetWeight).toFixed(1)} kg à perdre`
-                      : '🎯 Objectif atteint !'}
-                  </p>
-                )}
+        {/* Courbe tab */}
+        {activeTab === 'courbe' && (
+          <div className="space-y-4">
+            {chartData.length > 0 ? (
+              <>
+                <WeightChart
+                  data={chartData}
+                  goal={user.targetWeight ?? undefined}
+                />
+                <WeightStats
+                  data={chartData}
+                  goal={user.targetWeight ?? undefined}
+                  startWeight={user.startWeight ?? undefined}
+                  targetWeight={user.targetWeight ?? undefined}
+                />
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-3xl mb-3">📊</p>
+                <p className="text-zinc-500 text-sm">Aucune donnée de poids pour l&apos;instant.</p>
               </div>
-              <span className="text-4xl">🎯</span>
-            </div>
-            {stats && user.startWeight && (
-              <div className="mt-3">
-                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500 rounded-full transition-all"
-                    style={{
-                      width: `${Math.min(100, Math.max(0, Math.round(
-                        ((user.startWeight - stats.current) / (user.startWeight - user.targetWeight)) * 100
-                      )))}%`
-                    }}
-                  />
-                </div>
-                <p className="text-xs text-zinc-600 mt-1 text-right">
-                  {Math.min(100, Math.max(0, Math.round(
-                    ((user.startWeight - stats.current) / (user.startWeight - user.targetWeight)) * 100
-                  )))}% accompli
-                </p>
+            )}
+          </div>
+        )}
+
+        {/* Médias tab */}
+        {activeTab === 'medias' && (
+          <div>
+            {postsLoading ? (
+              <div className="flex justify-center py-10">
+                <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : mediaPosts.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-3xl mb-3">🖼️</p>
+                <p className="text-zinc-500 text-sm">Aucun média partagé pour l&apos;instant.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-1">
+                {mediaPosts.map((post) => (
+                  <a
+                    key={post.id}
+                    href={`/post/${post.id}`}
+                    className="aspect-square overflow-hidden rounded-lg block"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={post.imageUrl!}
+                      alt="Media"
+                      className="w-full h-full object-cover hover:opacity-80 transition-opacity"
+                    />
+                  </a>
+                ))}
               </div>
             )}
           </div>

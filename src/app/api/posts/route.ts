@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 
-// GET /api/posts?page=1&limit=10
+// GET /api/posts?page=1&limit=10&userId=xxx
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') ?? '10', 10)))
     const skip = (page - 1) * limit
+    const userId = searchParams.get('userId')
 
     const posts = await prisma.post.findMany({
       skip,
@@ -16,6 +17,7 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
       where: {
         user: { banned: false },
+        ...(userId ? { userId } : {}),
       },
       include: {
         user: {
