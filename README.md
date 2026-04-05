@@ -37,18 +37,6 @@ Construit entièrement avec l'IA (Claude) en quelques semaines, sans expertise e
 
 ---
 
-## Pourquoi le projet a été fermé
-
-Ce projet collectait des données personnelles et de santé (emails, poids, progressions) de plus de 650 membres.
-
-Malgré un audit de sécurité réalisé en avril 2026, j'ai réalisé que gérer ce type de service nécessite une expertise en sécurité que je n'ai pas. On vit à une époque où les fuites de données sont fréquentes — je refuse de contribuer à ça.
-
-Voir [frenchbreaches.com](https://frenchbreaches.com/) pour comprendre l'ampleur du problème.
-
-**Toutes les données des utilisateurs ont été supprimées.**
-
----
-
 ## Installation (pour les devs qui veulent reprendre le projet)
 
 ### Prérequis
