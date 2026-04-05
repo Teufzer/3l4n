@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 
@@ -9,11 +10,14 @@ interface OnboardingModalProps {
 }
 
 export default function OnboardingModal({ userName }: OnboardingModalProps) {
+  const [open, setOpen] = useState(true)
   const [step, setStep] = useState<1 | 2>(1)
   const [weight, setWeight] = useState('')
   const [targetWeight, setTargetWeight] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { data: session } = useSession()
+  const emailNotVerified = (session?.user as { isCredentialsUser?: boolean; emailVerified?: unknown })?.isCredentialsUser && !(session?.user as { emailVerified?: unknown })?.emailVerified
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,6 +61,8 @@ export default function OnboardingModal({ userName }: OnboardingModalProps) {
   }
 
   const firstName = userName ? userName.split(' ')[0] : 'toi'
+
+  if (!open) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-4 pb-4 sm:pb-0">
@@ -143,10 +149,14 @@ export default function OnboardingModal({ userName }: OnboardingModalProps) {
             )}
           </button>
 
+          {emailNotVerified && (
+            <p className="text-amber-400 text-xs text-center mt-1">📧 Vérifie ton email pour pouvoir ajouter ton poids. <button type="button" onClick={() => setOpen(false)} className="underline">Passer pour l'instant</button></p>
+          )}
+
           {/* Skip */}
           <button
             type="button"
-            onClick={() => router.refresh()}
+            onClick={() => setOpen(false)}
             className="text-zinc-600 text-xs hover:text-zinc-400 transition text-center"
           >
             Passer pour l&apos;instant
