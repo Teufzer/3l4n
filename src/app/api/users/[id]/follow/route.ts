@@ -14,8 +14,8 @@ export async function GET(
     const currentUserId = session?.user?.id ?? null
 
     const [followersCount, followingCount, followRecord, blockRecord] = await Promise.all([
-      prisma.follow.count({ where: { followingId: targetId } }),
-      prisma.follow.count({ where: { followerId: targetId } }),
+      prisma.follow.count({ where: { followingId: targetId, status: 'ACCEPTED' } }),
+      prisma.follow.count({ where: { followerId: targetId, status: 'ACCEPTED' } }),
       currentUserId
         ? prisma.follow.findUnique({
             where: { followerId_followingId: { followerId: currentUserId, followingId: targetId } },
@@ -33,8 +33,16 @@ export async function GET(
         : null,
     ])
 
+    // Determine status
+    let status: 'pending' | 'following' | 'none' = 'none'
+    if (followRecord) {
+      status = followRecord.status === 'ACCEPTED' ? 'following' : 'pending'
+    }
+
     return NextResponse.json({
-      following: !!followRecord,
+      // Legacy field for backwards compat
+      following: status === 'following',
+      status,
       blocked: !!blockRecord,
       followersCount,
       followingCount,
@@ -45,7 +53,7 @@ export async function GET(
   }
 }
 
-// POST /api/users/[id]/follow — toggle follow
+// POST /api/users/[id]/follow — toggle follow (with pending support for private profiles)
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -67,21 +75,21 @@ export async function POST(
       return NextResponse.json({ error: 'Impossible de se suivre soi-même' }, { status: 400 })
     }
 
-    // Check if already following
+    // Check if already following (any status)
     const existing = await prisma.follow.findUnique({
       where: { followerId_followingId: { followerId: currentUserId, followingId: targetId } },
     })
 
-    let following: boolean
+    let resultStatus: 'pending' | 'following' | 'none'
 
     if (existing) {
-      // Unfollow
+      // Unfollow or cancel pending request
       await prisma.follow.delete({
         where: { followerId_followingId: { followerId: currentUserId, followingId: targetId } },
       })
-      following = false
+      resultStatus = 'none'
     } else {
-      // Follow — check that neither party has blocked the other
+      // Check block
       const block = await prisma.block.findFirst({
         where: {
           OR: [
@@ -94,18 +102,39 @@ export async function POST(
         return NextResponse.json({ error: 'Action impossible (blocage actif)' }, { status: 403 })
       }
 
-      await prisma.follow.create({
-        data: { followerId: currentUserId, followingId: targetId },
+      // Fetch target user to check if private
+      const targetUser = await prisma.user.findUnique({
+        where: { id: targetId },
+        select: { profilePrivate: true },
       })
-      following = true
+
+      if (!targetUser) {
+        return NextResponse.json({ error: 'Utilisateur introuvable' }, { status: 404 })
+      }
+
+      const followStatus = targetUser.profilePrivate ? 'PENDING' : 'ACCEPTED'
+
+      await prisma.follow.create({
+        data: { followerId: currentUserId, followingId: targetId, status: followStatus },
+      })
+
+      resultStatus = followStatus === 'PENDING' ? 'pending' : 'following'
 
       // Create FOLLOW notification
+      // Different message text is handled on the frontend/notification display level via status
       await upsertNotification({ userId: targetId, actorId: currentUserId, type: 'FOLLOW' })
     }
 
-    const followersCount = await prisma.follow.count({ where: { followingId: targetId } })
+    const followersCount = await prisma.follow.count({
+      where: { followingId: targetId, status: 'ACCEPTED' },
+    })
 
-    return NextResponse.json({ following, followersCount })
+    return NextResponse.json({
+      status: resultStatus,
+      // Legacy field for backwards compat
+      following: resultStatus === 'following',
+      followersCount,
+    })
   } catch (error) {
     console.error('[POST /api/users/[id]/follow]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

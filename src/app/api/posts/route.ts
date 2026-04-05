@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
           select: { blockerId: true, blockedId: true },
         }),
         prisma.follow.findMany({
-          where: { followerId: currentUserId },
+          where: { followerId: currentUserId, status: 'ACCEPTED' },
           select: { followingId: true },
         }),
       ])
@@ -41,6 +41,9 @@ export async function GET(req: NextRequest) {
         b.blockerId === currentUserId ? b.blockedId : b.blockerId
       )
       followedUserIds = follows.map((f) => f.followingId)
+    } else if (!currentUserId && !userId) {
+      // Unauthenticated: need to know accepted follows (none for anon)
+      followedUserIds = []
     }
 
     // When fetching a user's profile posts, also include posts they reposted
@@ -117,10 +120,32 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ posts: merged, page, limit })
     }
 
+    // Get IDs of private users NOT followed by current user
+    // Private profile posts should only appear if the current user follows them (ACCEPTED)
+    const privateUserFilter = await (async () => {
+      // Find all private users
+      const privateUsers = await prisma.user.findMany({
+        where: { profilePrivate: true, banned: false },
+        select: { id: true },
+      })
+      // Filter out those the current user follows (accepted)
+      const privateUserIds = privateUsers
+        .map((u) => u.id)
+        .filter((id) => !followedUserIds.includes(id))
+        // Also exclude the current user themselves (they see their own posts)
+        .filter((id) => id !== currentUserId)
+      return privateUserIds
+    })()
+
+    const excludedIds = [
+      ...blockedUserIds,
+      ...privateUserFilter,
+    ]
+
     const whereClause = {
       user: { banned: false },
-      ...(blockedUserIds.length > 0
-        ? { userId: { notIn: blockedUserIds } }
+      ...(excludedIds.length > 0
+        ? { userId: { notIn: excludedIds } }
         : {}),
     }
 

@@ -185,6 +185,7 @@ model Follow {
   id          String   @id @default(cuid())
   followerId  String
   followingId String
+  status      String   @default("ACCEPTED") // "PENDING" ou "ACCEPTED"
   createdAt   DateTime @default(now())
   follower    User     @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
   following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)

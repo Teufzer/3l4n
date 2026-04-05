@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface NotifActor {
   id: string
@@ -22,14 +23,28 @@ interface Notification {
   post: { id: string; content: string } | null
 }
 
-type Tab = 'all' | 'mentions' | 'reactions' | 'comments' | 'follows'
+type Tab = 'all' | 'mentions' | 'reactions' | 'comments' | 'follows' | 'requests'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'all', label: 'Tout' },
   { key: 'mentions', label: 'Mentions' },
   { key: 'reactions', label: 'Réactions' },
   { key: 'comments', label: 'Commentaires' },
+  { key: 'requests', label: 'Demandes 👥' },
 ]
+
+interface FollowRequest {
+  id: string
+  createdAt: string
+  follower: {
+    id: string
+    name: string | null
+    username: string | null
+    avatar: string | null
+    image: string | null
+    verified: boolean
+  }
+}
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -124,6 +139,7 @@ function EmptyState({ tab }: { tab: Tab }) {
     reactions: { emoji: '❤️', title: 'Aucune réaction', sub: 'Quand quelqu\'un réagit à tes posts, tu le verras ici.' },
     follows: { emoji: '👤', title: 'Aucun abonné', sub: "Quand quelqu'un te suit, tu le verras ici" },
     comments: { emoji: '💬', title: 'Aucun commentaire', sub: 'Les commentaires sur tes posts apparaîtront ici.' },
+    requests: { emoji: '👥', title: 'Aucune demande', sub: 'Les demandes de suivi pour ton compte privé apparaîtront ici.' },
   }
   const { emoji, title, sub } = messages[tab]
   return (
@@ -214,8 +230,81 @@ function NotifCard({
   )
 }
 
+function FollowRequestCard({
+  req,
+  onAccept,
+  onReject,
+}: {
+  req: FollowRequest
+  onAccept: (id: string) => void
+  onReject: (id: string) => void
+}) {
+  const [acting, setActing] = useState(false)
+  const src = req.follower.avatar ?? req.follower.image
+  const displayName = req.follower.name ?? req.follower.username ?? 'Utilisateur'
+  const href = req.follower.username ? `/${req.follower.username}` : `/profile/${req.follower.id}`
+
+  const handle = async (action: 'accept' | 'reject') => {
+    if (acting) return
+    setActing(true)
+    try {
+      const res = await fetch(`/api/users/follow-requests/${req.id}/${action}`, { method: 'POST' })
+      if (!res.ok) return
+      if (action === 'accept') onAccept(req.id)
+      else onReject(req.id)
+    } catch {
+      // silent
+    } finally {
+      setActing(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+      <Link href={href} className="flex-shrink-0">
+        {src ? (
+          <Image src={src} alt="" width={44} height={44} className="w-11 h-11 rounded-full object-cover" />
+        ) : (
+          <div className="w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold">
+            {displayName[0].toUpperCase()}
+          </div>
+        )}
+      </Link>
+      <div className="flex-1 min-w-0">
+        <Link href={href}>
+          <p className="text-sm font-semibold text-white truncate">
+            {displayName}
+            {req.follower.verified && <span className="ml-1 text-emerald-400">✓</span>}
+          </p>
+          {req.follower.username && (
+            <p className="text-xs text-white/40">@{req.follower.username}</p>
+          )}
+        </Link>
+      </div>
+      <div className="flex gap-2 flex-shrink-0">
+        <button
+          onClick={() => handle('accept')}
+          disabled={acting}
+          className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-500 text-black hover:bg-emerald-400 transition-colors disabled:opacity-50"
+        >
+          Accepter
+        </button>
+        <button
+          onClick={() => handle('reject')}
+          disabled={acting}
+          className="px-3 py-1.5 rounded-full text-xs font-bold border border-white/20 text-white/60 hover:bg-white/10 transition-colors disabled:opacity-50"
+        >
+          Refuser
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [followRequests, setFollowRequests] = useState<FollowRequest[]>([])
+  const [requestsLoading, setRequestsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('all')
@@ -234,9 +323,24 @@ export default function NotificationsPage() {
     }
   }, [])
 
+  const loadFollowRequests = useCallback(async () => {
+    setRequestsLoading(true)
+    try {
+      const res = await fetch('/api/users/follow-requests')
+      if (!res.ok) return
+      const data = await res.json()
+      setFollowRequests(data.requests ?? [])
+    } catch {
+      // silent
+    } finally {
+      setRequestsLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     loadNotifications()
-  }, [loadNotifications])
+    loadFollowRequests()
+  }, [loadNotifications, loadFollowRequests])
 
   const handleMarkAllRead = async () => {
     if (markingAll) return
@@ -261,6 +365,14 @@ export default function NotificationsPage() {
         prev.map((n) => (n.id === id ? { ...n, read: false } : n))
       )
     })
+  }, [])
+
+  const handleAccept = useCallback((id: string) => {
+    setFollowRequests((prev) => prev.filter((r) => r.id !== id))
+  }, [])
+
+  const handleReject = useCallback((id: string) => {
+    setFollowRequests((prev) => prev.filter((r) => r.id !== id))
   }, [])
 
   const filtered = notifications.filter((n) => {
@@ -292,10 +404,12 @@ export default function NotificationsPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 -mx-1">
+          <div className="flex gap-1 -mx-1 overflow-x-auto">
             {TABS.map((tab) => {
               const tabCount =
-                tab.key === 'all'
+                tab.key === 'requests'
+                  ? followRequests.length
+                  : tab.key === 'all'
                   ? notifications.filter((n) => !n.read).length
                   : notifications.filter(
                       (n) =>
@@ -348,11 +462,39 @@ export default function NotificationsPage() {
           <div className="text-center py-16 text-red-400 text-sm px-4">{error}</div>
         )}
 
-        {!loading && !error && filtered.length === 0 && (
+        {/* Follow requests tab */}
+        {activeTab === 'requests' && !requestsLoading && followRequests.length === 0 && (
+          <EmptyState tab="requests" />
+        )}
+
+        {activeTab === 'requests' && requestsLoading && (
+          <div className="flex items-center justify-center py-20">
+            <svg className="w-6 h-6 animate-spin text-emerald-400" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+          </div>
+        )}
+
+        {activeTab === 'requests' && !requestsLoading && followRequests.length > 0 && (
+          <div>
+            {followRequests.map((req) => (
+              <FollowRequestCard
+                key={req.id}
+                req={req}
+                onAccept={handleAccept}
+                onReject={handleReject}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Normal notifications tabs */}
+        {activeTab !== 'requests' && !loading && !error && filtered.length === 0 && (
           <EmptyState tab={activeTab} />
         )}
 
-        {!loading && !error && filtered.length > 0 && (
+        {activeTab !== 'requests' && !loading && !error && filtered.length > 0 && (
           <div>
             {filtered.map((notif) => (
               <NotifCard key={notif.id} notif={notif} onRead={handleMarkOneRead} />
