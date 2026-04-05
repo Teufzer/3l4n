@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import DashboardClient from './DashboardClient'
-import OnboardingModal from '@/components/OnboardingModal'
 import UsernameOnboardingModal from '@/components/UsernameOnboardingModal'
 import EmailVerificationBanner from '@/components/EmailVerificationBanner'
 import EmailVerificationModal from '@/components/EmailVerificationModal'
@@ -75,7 +74,14 @@ export default async function DashboardPage() {
           </div>
 
           {/* Dashboard client (stats + chart + form) */}
-          <DashboardClient initialEntries={entries} targetWeight={user?.targetWeight ?? null} startWeight={user?.startWeight ?? null} height={user?.height ?? null} />
+          <DashboardClient
+            initialEntries={entries}
+            targetWeight={user?.targetWeight ?? null}
+            startWeight={user?.startWeight ?? null}
+            height={user?.height ?? null}
+            needsOnboarding={!showEmailBanner && !needsUsername && needsOnboarding}
+            userName={session.user?.name}
+          />
 
           {/* Feed link */}
           <Link
@@ -99,7 +105,7 @@ export default async function DashboardPage() {
       {showEmailBanner && <EmailVerificationModal email={session.user.email} />}
       {showEmailBanner && <EmailVerificationBanner />}
       {needsUsername && <UsernameOnboardingModal userName={session.user?.name} />}
-      {!needsUsername && needsOnboarding && <OnboardingModal userName={session.user?.name} />}
+
     </>
   )
 }

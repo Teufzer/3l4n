@@ -24,6 +24,9 @@ export async function GET() {
       avatar: true,
       bannerUrl: true,
       weightPrivate: true,
+      profilePrivate: true,
+      heightPrivate: true,
+      imcPrivate: true,
     },
   })
 
@@ -50,6 +53,9 @@ export async function PATCH(req: NextRequest) {
     startWeight?: number | null
     height?: number | null
     weightPrivate?: boolean
+    profilePrivate?: boolean
+    heightPrivate?: boolean
+    imcPrivate?: boolean
   }
   try {
     body = await req.json()
@@ -57,7 +63,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'JSON invalide' }, { status: 400 })
   }
 
-  const { username, name, bio, targetWeight, startWeight, height, weightPrivate } = body
+  const { username, name, bio, targetWeight, startWeight, height, weightPrivate, profilePrivate, heightPrivate, imcPrivate } = body
 
   // Validation
   if (targetWeight !== undefined && targetWeight !== null && (typeof targetWeight !== 'number' || targetWeight <= 0)) {
@@ -104,6 +110,18 @@ export async function PATCH(req: NextRequest) {
     if (typeof weightPrivate !== 'boolean') return NextResponse.json({ error: 'weightPrivate doit être un booléen' }, { status: 400 })
     updateData.weightPrivate = weightPrivate
   }
+  if (profilePrivate !== undefined) {
+    if (typeof profilePrivate !== 'boolean') return NextResponse.json({ error: 'profilePrivate doit être un booléen' }, { status: 400 })
+    updateData.profilePrivate = profilePrivate
+  }
+  if (heightPrivate !== undefined) {
+    if (typeof heightPrivate !== 'boolean') return NextResponse.json({ error: 'heightPrivate doit être un booléen' }, { status: 400 })
+    updateData.heightPrivate = heightPrivate
+  }
+  if (imcPrivate !== undefined) {
+    if (typeof imcPrivate !== 'boolean') return NextResponse.json({ error: 'imcPrivate doit être un booléen' }, { status: 400 })
+    updateData.imcPrivate = imcPrivate
+  }
 
   const user = await prisma.user.update({
     where: { id: userId },
@@ -117,6 +135,9 @@ export async function PATCH(req: NextRequest) {
       startWeight: true,
       height: true,
       weightPrivate: true,
+      profilePrivate: true,
+      heightPrivate: true,
+      imcPrivate: true,
     },
   })
 

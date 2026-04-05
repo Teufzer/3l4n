@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "profilePrivate" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN "heightPrivate" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN "imcPrivate" BOOLEAN NOT NULL DEFAULT false;

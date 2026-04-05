@@ -28,6 +28,9 @@ export default async function UsernamePage({ params }: Props) {
       targetWeight: true,
       height: true,
       weightPrivate: true,
+      profilePrivate: true,
+      heightPrivate: true,
+      imcPrivate: true,
       verified: true,
       weightEntries: { orderBy: { date: 'asc' }, select: { id: true, weight: true, date: true, note: true } },
       posts: {

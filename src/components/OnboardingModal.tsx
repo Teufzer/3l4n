@@ -1,23 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 
 interface OnboardingModalProps {
   userName?: string | null
+  onSkipped?: () => void
 }
 
-export default function OnboardingModal({ userName }: OnboardingModalProps) {
+export default function OnboardingModal({ userName, onSkipped }: OnboardingModalProps) {
   const [open, setOpen] = useState(true)
-  const [step, setStep] = useState<1 | 2>(1)
   const [weight, setWeight] = useState('')
   const [targetWeight, setTargetWeight] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const { data: session } = useSession()
-  const emailNotVerified = (session?.user as { isCredentialsUser?: boolean; emailVerified?: unknown })?.isCredentialsUser && !(session?.user as { emailVerified?: unknown })?.emailVerified
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,12 +49,19 @@ export default function OnboardingModal({ userName }: OnboardingModalProps) {
       }
 
       toast.success(`Bienvenue dans l'aventure ${userName ? userName.split(' ')[0] : ''} ! 🎉`)
+      setOpen(false)
       router.refresh()
+      router.push('/dashboard')
     } catch {
       toast.error('Oups, quelque chose a planté. Réessaie !')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSkip = () => {
+    setOpen(false)
+    onSkipped?.()
   }
 
   const firstName = userName ? userName.split(' ')[0] : 'toi'
@@ -149,14 +153,10 @@ export default function OnboardingModal({ userName }: OnboardingModalProps) {
             )}
           </button>
 
-          {emailNotVerified && (
-            <p className="text-amber-400 text-xs text-center mt-1">📧 Vérifie ton email pour pouvoir ajouter ton poids. <button type="button" onClick={() => setOpen(false)} className="underline">Passer pour l'instant</button></p>
-          )}
-
           {/* Skip */}
           <button
             type="button"
-            onClick={() => setOpen(false)}
+            onClick={handleSkip}
             className="text-zinc-600 text-xs hover:text-zinc-400 transition text-center"
           >
             Passer pour l&apos;instant

@@ -25,6 +25,9 @@ interface ProfileUser {
   targetWeight: number | null
   height?: number | null
   weightPrivate?: boolean
+  profilePrivate?: boolean
+  heightPrivate?: boolean
+  imcPrivate?: boolean
   weightEntries: { id: string; weight: number; date: Date; note: string | null }[]
   posts: { id: string; content: string; createdAt: Date; reactions: { type: string }[] }[]
   _count: { posts: number; weightEntries: number; followers?: number; following?: number }
@@ -118,13 +121,16 @@ export default function ProfileContent({
 
   const isOwnProfile = session?.user?.id === user.id
   const isWeightPrivate = !!user.weightPrivate && !isOwnProfile
+  const isProfilePrivate = !!user.profilePrivate && !isOwnProfile
+  const isHeightPrivate = !!user.heightPrivate && !isOwnProfile
+  const isImcPrivate = (!!user.imcPrivate || !!user.heightPrivate) && !isOwnProfile
   const stats = computeWeightStats(user.weightEntries, user.startWeight)
   const streak = computeStreak(user.weightEntries)
 
   // IMC
   const sortedEntries = [...user.weightEntries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   const lastWeight = sortedEntries.length > 0 ? sortedEntries[sortedEntries.length - 1].weight : null
-  const showImc = !isWeightPrivate && lastWeight !== null && user.height != null && user.height > 0
+  const showImc = !isWeightPrivate && !isImcPrivate && lastWeight !== null && user.height != null && user.height > 0
   const imcValue = showImc ? lastWeight! / Math.pow(user.height! / 100, 2) : null
   const imcLabel = imcValue !== null
     ? imcValue < 18.5 ? 'Insuffisance pondérale'
@@ -188,6 +194,71 @@ export default function ProfileContent({
 
   const handlePostUpdated = (updated: Post) => {
     setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+  }
+
+  if (isProfilePrivate) {
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] pb-24">
+        {/* Sticky header */}
+        <header className="sticky top-0 z-30 bg-[#0f0f0f]/90 backdrop-blur-sm border-b border-zinc-800/60 px-4 py-3 flex items-center gap-4">
+          <button
+            onClick={() => { window.location.href = '/feed' }}
+            className="p-1.5 rounded-full hover:bg-zinc-800 transition-colors text-white"
+            aria-label="Retour"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div className="min-w-0">
+            <p className="text-white font-bold text-base leading-tight truncate">
+              {user.name || 'Utilisateur'}
+            </p>
+          </div>
+        </header>
+
+        {/* Banner */}
+        <div className="h-32">
+          {user.bannerUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.bannerUrl} alt="Banni\u00e8re" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-emerald-600 to-emerald-900" />
+          )}
+        </div>
+
+        {/* Avatar */}
+        <div className="px-4">
+          <div className="-mt-8 relative z-10 mb-4">
+            {user.avatar || user.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={(user.avatar || user.image)!}
+                alt={user.name || 'Avatar'}
+                className="w-20 h-20 rounded-full object-cover ring-4 ring-[#0f0f0f]"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-[#1a1a1a] border-2 border-zinc-700 ring-4 ring-[#0f0f0f] flex items-center justify-center">
+                <span className="text-emerald-400 font-bold text-2xl">
+                  {getInitials(user.name)}
+                </span>
+              </div>
+            )}
+          </div>
+          <h1 className="text-white font-bold text-xl mb-1">{user.name || 'Utilisateur'}</h1>
+          {user.username && <p className="text-zinc-500 text-sm mb-4">@{user.username}</p>}
+
+          {/* Private indicator */}
+          <div className="flex items-center gap-3 bg-zinc-800/60 border border-zinc-700/50 rounded-2xl px-4 py-3 mt-2">
+            <span className="text-2xl">\ud83d\udd12</span>
+            <div>
+              <p className="text-white font-semibold text-sm">Ce profil est priv\u00e9</p>
+              <p className="text-zinc-500 text-xs mt-0.5">Suis cet utilisateur pour voir son profil complet</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -323,7 +394,7 @@ export default function ProfileContent({
                 </svg>
                 Membre depuis {formatMemberSince(user.createdAt)}
               </p>
-              {user.height && (
+              {user.height && !isHeightPrivate && (
                 <p className="text-zinc-500 text-sm flex items-center gap-1">
                   📏 <span>{user.height} cm</span>
                   {showImc && imcValue !== null && (

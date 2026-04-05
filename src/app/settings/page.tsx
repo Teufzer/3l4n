@@ -17,6 +17,9 @@ interface UserProfile {
   avatar: string | null
   bannerUrl: string | null
   weightPrivate: boolean
+  profilePrivate: boolean
+  heightPrivate: boolean
+  imcPrivate: boolean
 }
 
 export default function SettingsPage() {
@@ -42,6 +45,9 @@ export default function SettingsPage() {
 
   // Privacy state
   const [weightPrivate, setWeightPrivate] = useState(false)
+  const [profilePrivate, setProfilePrivate] = useState(false)
+  const [heightPrivate, setHeightPrivate] = useState(false)
+  const [imcPrivate, setImcPrivate] = useState(false)
   const [privacySaving, setPrivacySaving] = useState(false)
   const [privacySaved, setPrivacySaved] = useState(false)
 
@@ -58,6 +64,9 @@ export default function SettingsPage() {
           setTargetWeight(user.targetWeight?.toString() ?? '')
           setHeight(user.height?.toString() ?? '')
           setWeightPrivate(user.weightPrivate ?? false)
+          setProfilePrivate(user.profilePrivate ?? false)
+          setHeightPrivate(user.heightPrivate ?? false)
+          setImcPrivate(user.imcPrivate ?? false)
         }
       })
       .catch(() => setError('Impossible de charger le profil'))
@@ -151,15 +160,14 @@ export default function SettingsPage() {
     router.push('/login')
   }
 
-  async function handleWeightPrivateToggle(newValue: boolean) {
-    setWeightPrivate(newValue)
+  async function savePrivacy(patch: Record<string, boolean>) {
     setPrivacySaving(true)
     setPrivacySaved(false)
     try {
       const res = await fetch('/api/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ weightPrivate: newValue }),
+        body: JSON.stringify(patch),
       })
       if (!res.ok) {
         const data = await res.json()
@@ -168,11 +176,38 @@ export default function SettingsPage() {
       setPrivacySaved(true)
       setTimeout(() => setPrivacySaved(false), 3000)
     } catch {
-      // Revert on error
-      setWeightPrivate(!newValue)
+      // Revert on error — reset to previous values
+      if (patch.weightPrivate !== undefined) setWeightPrivate(!patch.weightPrivate)
+      if (patch.profilePrivate !== undefined) setProfilePrivate(!patch.profilePrivate)
+      if (patch.heightPrivate !== undefined) setHeightPrivate(!patch.heightPrivate)
+      if (patch.imcPrivate !== undefined) setImcPrivate(!patch.imcPrivate)
     } finally {
       setPrivacySaving(false)
     }
+  }
+
+  async function handlePrivacyToggle(field: 'weightPrivate' | 'profilePrivate' | 'heightPrivate' | 'imcPrivate', newValue: boolean) {
+    if (field === 'weightPrivate') setWeightPrivate(newValue)
+    if (field === 'profilePrivate') setProfilePrivate(newValue)
+    if (field === 'heightPrivate') setHeightPrivate(newValue)
+    if (field === 'imcPrivate') setImcPrivate(newValue)
+    await savePrivacy({ [field]: newValue })
+  }
+
+  async function handleSetAllPrivate() {
+    setWeightPrivate(true)
+    setProfilePrivate(true)
+    setHeightPrivate(true)
+    setImcPrivate(true)
+    await savePrivacy({ weightPrivate: true, profilePrivate: true, heightPrivate: true, imcPrivate: true })
+  }
+
+  async function handleSetAllPublic() {
+    setWeightPrivate(false)
+    setProfilePrivate(false)
+    setHeightPrivate(false)
+    setImcPrivate(false)
+    await savePrivacy({ weightPrivate: false, profilePrivate: false, heightPrivate: false, imcPrivate: false })
   }
 
   if (loading) {
@@ -422,28 +457,73 @@ export default function SettingsPage() {
               </p>
             </div>
 
-            {/* Weight privacy toggle */}
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-white font-medium">Rendre ma courbe de poids privée</p>
-                <p className="text-xs text-white/30 mt-0.5">
-                  Seul toi pourras voir l&apos;onglet Courbe sur ton profil
-                </p>
+            {/* Privacy toggles */}
+            {[
+              {
+                field: 'profilePrivate' as const,
+                value: profilePrivate,
+                label: 'Profil privé',
+                description: 'Seuls tes abonnés peuvent voir ton profil complet',
+              },
+              {
+                field: 'weightPrivate' as const,
+                value: weightPrivate,
+                label: 'Poids privé',
+                description: "Ton poids n'apparaît pas dans le classement",
+              },
+              {
+                field: 'heightPrivate' as const,
+                value: heightPrivate,
+                label: 'Taille & IMC privés',
+                description: 'Ta taille et ton IMC sont masqués',
+              },
+              {
+                field: 'imcPrivate' as const,
+                value: imcPrivate,
+                label: 'Courbe privée',
+                description: 'Ton graphique de progression est masqué',
+              },
+            ].map(({ field, value, label, description }) => (
+              <div key={field} className="flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white font-medium">{label}</p>
+                  <p className="text-xs text-white/30 mt-0.5">{description}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handlePrivacyToggle(field, !value)}
+                  disabled={privacySaving}
+                  aria-label={label}
+                  className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
+                    value ? 'bg-emerald-500' : 'bg-white/10'
+                  } ${privacySaving ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                      value ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
+            ))}
+
+            {/* Bulk actions */}
+            <div className="flex gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => handleWeightPrivateToggle(!weightPrivate)}
+                onClick={handleSetAllPrivate}
                 disabled={privacySaving}
-                aria-label="Rendre ma courbe de poids privée"
-                className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
-                  weightPrivate ? 'bg-emerald-500' : 'bg-white/10'
-                } ${privacySaving ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold transition disabled:opacity-50"
               >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
-                    weightPrivate ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
+                🔒 Tout mettre en privé
+              </button>
+              <button
+                type="button"
+                onClick={handleSetAllPublic}
+                disabled={privacySaving}
+                className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 text-xs font-semibold transition disabled:opacity-50"
+              >
+                🌐 Tout rendre public
               </button>
             </div>
 

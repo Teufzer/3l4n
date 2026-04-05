@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import WeightStats from '@/components/weight/WeightStats'
 import WeightChart, { type WeightDataPoint } from '@/components/weight/WeightChart'
 import WeightForm from '@/components/weight/WeightForm'
+import OnboardingModal from '@/components/OnboardingModal'
 
 interface EntryWithId extends WeightDataPoint {
   id: string
@@ -15,6 +16,8 @@ interface DashboardClientProps {
   startWeight?: number | null
   userImage?: string | null
   height?: number | null
+  needsOnboarding?: boolean
+  userName?: string | null
 }
 
 // ─── IMC helpers ──────────────────────────────────────────────────────────────
@@ -66,9 +69,11 @@ function parseImportText(text: string): { entries: ParsedImportEntry[]; errors: 
   return { entries, errors }
 }
 
-export default function DashboardClient({ initialEntries, targetWeight, startWeight, height }: DashboardClientProps) {
+export default function DashboardClient({ initialEntries, targetWeight, startWeight, height, needsOnboarding, userName }: DashboardClientProps) {
   const [entries, setEntries] = useState<EntryWithId[]>(initialEntries)
   const [showForm, setShowForm] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(needsOnboarding ?? false)
+  const [onboardingSkipped, setOnboardingSkipped] = useState(false)
 
   // Import state
   const [showImport, setShowImport] = useState(false)
@@ -227,6 +232,11 @@ export default function DashboardClient({ initialEntries, targetWeight, startWei
 
   const hasData = entries.length > 0
 
+  const handleOnboardingSkip = () => {
+    setShowOnboarding(false)
+    setOnboardingSkipped(true)
+  }
+
   // IMC calculation
   const lastEntry = entries.length > 0 ? entries[entries.length - 1] : null
   const imc = lastEntry && height ? computeImc(lastEntry.weight, height) : null
@@ -237,6 +247,12 @@ export default function DashboardClient({ initialEntries, targetWeight, startWei
 
   return (
     <>
+    {showOnboarding && (
+      <OnboardingModal
+        userName={userName}
+        onSkipped={handleOnboardingSkip}
+      />
+    )}
     <div className="space-y-4">
       {/* Toast notification */}
       {importToast && (
@@ -275,6 +291,20 @@ export default function DashboardClient({ initialEntries, targetWeight, startWei
               Basé sur {lastEntry!.weight} kg · {height} cm
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Skipped onboarding — CTA to start tracking */}
+      {onboardingSkipped && !hasData && (
+        <div className="flex flex-col items-center gap-2 py-2">
+          <button
+            onClick={() => setShowOnboarding(true)}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-emerald-500/20"
+          >
+            <span>📊</span>
+            <span>Commencer à suivre mon poids</span>
+          </button>
+          <p className="text-zinc-600 text-xs">Tes progrès te seront affichés ici</p>
         </div>
       )}
 
