@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 
 interface NotifActor {
   id: string
@@ -263,7 +262,8 @@ function FollowRequestCard({
     <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/5 hover:bg-white/[0.03] transition-colors">
       <Link href={href} className="flex-shrink-0">
         {src ? (
-          <Image src={src} alt="" width={44} height={44} className="w-11 h-11 rounded-full object-cover" />
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={src} alt="" className="w-11 h-11 rounded-full object-cover" />
         ) : (
           <div className="w-11 h-11 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold">
             {displayName[0].toUpperCase()}
