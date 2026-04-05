@@ -37,6 +37,11 @@ export async function POST(req: NextRequest) {
   if ((session!.user as { banned?: boolean }).banned) {
     return NextResponse.json({ error: 'Compte suspendu' }, { status: 403 })
   }
+  // Email verification required
+  if (!(session!.user as { emailVerified?: unknown }).emailVerified && (session!.user as { isCredentialsUser?: boolean }).isCredentialsUser) {
+    return NextResponse.json({ error: 'Verifie ton email avant d`ajouter une pesee.' }, { status: 403 })
+  }
+
 
   let body: { weight: number; date?: string; note?: string }
   try {

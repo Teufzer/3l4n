@@ -175,6 +175,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ton compte est suspendu' }, { status: 403 })
     }
 
+    // Email verification required to post
+    if (!session.user.emailVerified && (session.user as { isCredentialsUser?: boolean }).isCredentialsUser) {
+      return NextResponse.json({ error: 'Verifie ton email avant de publier.' }, { status: 403 })
+    }
+
     // Rate limit: 30 posts par user par heure
     if (!await rateLimit(`post:${session.user.id}`, 30, 60 * 60 * 1000)) {
       return NextResponse.json({ error: 'Trop de posts. Réessaie dans un moment.' }, { status: 429 })

@@ -21,6 +21,12 @@ export async function POST(
       return NextResponse.json({ error: 'Compte suspendu' }, { status: 403 })
     }
 
+    // Email verification required
+    if (!(session.user as { emailVerified?: unknown }).emailVerified && (session.user as { isCredentialsUser?: boolean }).isCredentialsUser) {
+      return NextResponse.json({ error: 'Verifie ton email avant d`effectuer cette action.' }, { status: 403 })
+    }
+
+
     const { id: postId } = await params
     const body = await req.json()
     const { type } = body
