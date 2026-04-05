@@ -198,7 +198,7 @@ export default function Sidebar() {
               {(user.name || 'U')[0].toUpperCase()}
             </div>
           )}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 flex flex-col">
             <div className="flex items-center gap-1">
               <p className="text-white text-sm font-bold truncate">{user.name}</p>
               {(user as { verified?: boolean }).verified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
