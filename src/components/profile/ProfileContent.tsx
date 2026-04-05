@@ -250,9 +250,9 @@ export default function ProfileContent({
 
           {/* Private indicator */}
           <div className="flex items-center gap-3 bg-zinc-800/60 border border-zinc-700/50 rounded-2xl px-4 py-3 mt-2">
-            <span className="text-2xl">\ud83d\udd12</span>
+            <span className="text-2xl">🔒</span>
             <div>
-              <p className="text-white font-semibold text-sm">Ce profil est priv\u00e9</p>
+              <p className="text-white font-semibold text-sm">Ce profil est privé</p>
               <p className="text-zinc-500 text-xs mt-0.5">Suis cet utilisateur pour voir son profil complet</p>
             </div>
           </div>
