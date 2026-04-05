@@ -199,10 +199,10 @@ export default function Sidebar() {
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <span className="flex items-center gap-1">
+            <div className="flex items-center gap-1">
               <p className="text-white text-sm font-bold truncate">{user.name}</p>
               {(user as { verified?: boolean }).verified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
-            </span>
+            </div>
             <p className="text-white/40 text-xs truncate">@{user.username || 'user'}</p>
           </div>
           </button>
