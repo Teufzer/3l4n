@@ -6,6 +6,7 @@ import DashboardClient from './DashboardClient'
 import OnboardingModal from '@/components/OnboardingModal'
 import UsernameOnboardingModal from '@/components/UsernameOnboardingModal'
 import EmailVerificationBanner from '@/components/EmailVerificationBanner'
+import EmailVerificationModal from '@/components/EmailVerificationModal'
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -95,6 +96,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {showEmailBanner && <EmailVerificationModal email={session.user.email} />}
       {showEmailBanner && <EmailVerificationBanner />}
       {needsUsername && <UsernameOnboardingModal userName={session.user?.name} />}
       {!needsUsername && needsOnboarding && <OnboardingModal userName={session.user?.name} />}
