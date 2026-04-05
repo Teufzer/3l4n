@@ -248,13 +248,16 @@ export default function ProfileContent({
           <h1 className="text-white font-bold text-xl mb-1">{user.name || 'Utilisateur'}</h1>
           {user.username && <p className="text-zinc-500 text-sm mb-4">@{user.username}</p>}
 
-          {/* Private indicator */}
-          <div className="flex items-center gap-3 bg-zinc-800/60 border border-zinc-700/50 rounded-2xl px-4 py-3 mt-2">
-            <span className="text-2xl">🔒</span>
-            <div>
-              <p className="text-white font-semibold text-sm">Ce profil est privé</p>
-              <p className="text-zinc-500 text-xs mt-0.5">Suis cet utilisateur pour voir son profil complet</p>
+          {/* Follow button + Private indicator */}
+          <div className="flex items-center justify-between gap-3 mt-3">
+            <div className="flex items-center gap-2 bg-zinc-800/60 border border-zinc-700/50 rounded-2xl px-4 py-3 flex-1">
+              <span className="text-xl">🔒</span>
+              <div>
+                <p className="text-white font-semibold text-sm">Ce profil est privé</p>
+                <p className="text-zinc-500 text-xs mt-0.5">Suis pour voir le profil complet</p>
+              </div>
             </div>
+            <FollowButton userId={user.id} />
           </div>
         </div>
       </div>
