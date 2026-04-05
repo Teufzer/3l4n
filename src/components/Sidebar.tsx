@@ -198,12 +198,12 @@ export default function Sidebar() {
               {(user.name || 'U')[0].toUpperCase()}
             </div>
           )}
-          <div className="min-w-0 flex-1 flex flex-col">
-            <div className="flex items-center gap-1">
-              <p className="text-white text-sm font-bold truncate">{user.name}</p>
-              {(user as { verified?: boolean }).verified && <VerifiedBadge className="w-4 h-4 shrink-0" />}
+          <div style={{display:'flex', flexDirection:'column', minWidth:0, flex:1}}>
+            <div style={{display:'flex', alignItems:'center', gap:4}}>
+              <span style={{color:'white', fontSize:14, fontWeight:'bold', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{user.name}</span>
+              {(user as { verified?: boolean }).verified && <VerifiedBadge className="w-4 h-4 flex-shrink-0" />}
             </div>
-            <p className="text-white/40 text-xs truncate">@{user.username || 'user'}</p>
+            <span style={{color:'rgba(255,255,255,0.4)', fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>@{user.username || 'user'}</span>
           </div>
           </button>
         </div>
